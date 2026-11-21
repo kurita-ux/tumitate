@@ -61,7 +61,7 @@
 - 「単純返戻率」= 解約返戻金 ÷ 払い込んだ保険料
 - 将来の解約返戻金には、今後の配当金は含まれない
 
-## 提案書（印刷）の作り方
+## 比較試算書（印刷）の作り方
 - claude.ai の Artifact の中では印刷ダイアログ（window.print）もふつうのダウンロードも使えない
 - そこで、A4サイズ（794×1123px）の「紙」をページ内に組み立て、html2canvas で画像にし、jsPDF でPDFにまとめる
 - PDFは Artifact の downloads 機能（`claude.use('downloads')` の `save`）で利用者に渡す。保存前に確認画面が出る

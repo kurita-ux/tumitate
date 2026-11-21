@@ -276,7 +276,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
 .msg.ok { color: var(--good); }
 .msg.err { color: var(--bad); }
 
-/* 提案書（A4・紙の見た目で固定。画面のテーマに関係なく白い紙） */
+/* 比較試算書（A4・紙の見た目で固定。画面のテーマに関係なく白い紙） */
 .btn-primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .btn-primary:hover { background: var(--accent); filter: brightness(1.08); }
 .prop-preview { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
@@ -360,7 +360,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
       <button type="button" class="btn" id="pAdd">＋ 新しい保険</button>
       <button type="button" class="btn" id="pDup">複製</button>
       <button type="button" class="btn btn-danger" id="pDel">削除</button>
-      <button type="button" class="btn" id="goProposal">提案書を作る</button>
+      <button type="button" class="btn" id="goProposal">比較試算書を作る</button>
     </div>
   </section>
 
@@ -520,8 +520,8 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
 
   <section class="card" aria-labelledby="propTitle" id="proposalCard">
     <div class="card-head">
-      <h2 id="propTitle">提案書</h2>
-      <span class="hint">今の比較結果をA4の提案書にまとめ、PDFで保存できます。保存したPDFを印刷してください</span>
+      <h2 id="propTitle">比較試算書</h2>
+      <span class="hint">今の比較結果をA4の比較試算書にまとめ、PDFで保存できます。保存したPDFを印刷してください</span>
     </div>
     <div class="two">
       <label class="f" for="pr-to">宛名（お客様のお名前）<input type="text" id="pr-to" maxlength="40" placeholder="例：山田 太郎"></label>
@@ -529,14 +529,14 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
       <label class="f" for="pr-date">作成日<input type="text" id="pr-date" maxlength="20"></label>
       <p class="hint" id="pr-age"></p>
     </div>
-    <label class="f" for="pr-comment">ご提案のコメント（空欄なら載せません）<textarea id="pr-comment" rows="3" maxlength="600" placeholder="例：老後資金の準備として、保障を残しながら…"></textarea></label>
+    <label class="f" for="pr-comment">補足コメント（空欄なら載せません）<textarea id="pr-comment" rows="3" maxlength="600" placeholder="例：老後資金の準備として、保障を残しながら…"></textarea></label>
     <div class="btn-row">
       <button type="button" class="btn btn-primary" id="prSave">PDFで保存</button>
       <button type="button" class="btn" id="prPrint" hidden>印刷する</button>
     </div>
     <p class="msg" id="prMsg" aria-live="polite"></p>
     <details class="prop-preview" id="prPreview">
-      <summary>提案書のプレビューを見る</summary>
+      <summary>比較試算書のプレビューを見る</summary>
       <div class="sheets-wrap"><div id="sheets"></div></div>
     </details>
   </section>
@@ -1674,7 +1674,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     update();
   }
 
-  /* ---------- 提案書 ---------- */
+  /* ---------- 比較試算書 ---------- */
   var PRINT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4'];
   var SH_FONT = '"BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif';
   function todayText() { var d = new Date(); return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
@@ -1709,7 +1709,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     t.appendChild(tb);
     return t;
   }
-  /* 提案書用の動かないグラフ（色はすべて直接指定） */
+  /* 比較試算書用の動かないグラフ（色はすべて直接指定） */
   function staticChart(W, H) {
     var a0 = P().currentAge, a1 = Math.min(lastAge(), Math.max(a0 + 3, S.horizonAge));
     if (a1 <= a0) a1 = a0 + 1;
@@ -1792,7 +1792,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
 
     var head = el('div', 'sh-head'), hl = el('div');
     hl.appendChild(el('p', 'sh-eyebrow', '保険の見直し'));
-    hl.appendChild(el('h1', 'sh-title', 'ご提案書'));
+    hl.appendChild(el('h1', 'sh-title', '比較試算書'));
     if (pr.to) hl.appendChild(el('p', 'sh-to', pr.to + ' 様'));
     head.appendChild(hl);
     var meta = el('dl', 'sh-meta');
@@ -1801,7 +1801,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     blocks.push(head);
 
     /* 1 結論 */
-    var s1 = shSec(++no, 'ご提案の結論（' + age + '歳・' + yearOfAge(age) + '年まで置いた場合）');
+    var s1 = shSec(++no, '比較のまとめ（' + age + '歳・' + yearOfAge(age) + '年まで置いた場合）');
     var box = el('div', 'sh-box'), lead = el('p', 'sh-lead');
     if (best && best.v > base) {
       lead.appendChild(document.createTextNode(age + '歳まで置くなら、'));
@@ -1908,7 +1908,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
 
     /* 8 コメント */
     if (pr.comment && pr.comment.trim()) {
-      var s8 = shSec(++no, 'ご提案のコメント');
+      var s8 = shSec(++no, '補足コメント');
       s8.appendChild(el('p', 'sh-comment', pr.comment.trim()));
       blocks.push(s8);
     }
@@ -1941,7 +1941,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     var by = $('pr-by').value.trim();
     pages.forEach(function (sh, i) {
       var f = sh.lastChild;
-      f.appendChild(el('span', null, (by ? by + '　' : '') + '保険の見直しご提案書'));
+      f.appendChild(el('span', null, (by ? by + '　' : '') + '保険の見直し 比較試算書'));
       f.appendChild(el('span', null, (i + 1) + ' / ' + pages.length));
     });
   }
@@ -1984,7 +1984,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
         pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
       }
       var blob = pdf.output('blob');
-      var name = ('保険見直しご提案書_' + (prop().to || P().name) + '_' + ($('pr-date').value || todayText())).replace(/[\\/:*?"<>|\s]+/g, '_') + '.pdf';
+      var name = ('保険見直し比較試算書_' + (prop().to || P().name) + '_' + ($('pr-date').value || todayText())).replace(/[\\/:*?"<>|\s]+/g, '_') + '.pdf';
       if (inArtifact()) {
         var dl = await window.claude.use('downloads');
         if (!dl) { setMsg('このページではファイルの保存が使えません。', false); return; }
