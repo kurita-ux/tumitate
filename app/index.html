@@ -61,6 +61,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   margin: 0;
   background: var(--bg);
@@ -244,6 +245,36 @@ label.f.full { grid-column: 1 / -1; }
 @media (prefers-reduced-motion: no-preference) {
   .opt, .pill { transition: background-color 0.2s ease; }
 }
+
+/* 一般向け：保険の切り替え・入力方法 */
+.policy-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.policy-bar label { font-weight: 700; font-size: 0.9rem; }
+.policy-bar select { width: auto; max-width: 100%; min-width: 12em; background: var(--surface); }
+.btn-danger { color: var(--bad); border-color: var(--bad); }
+.btn-danger:hover { background: var(--bad-wash); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.empty-state { justify-items: start; }
+.empty-state p { color: var(--ink-2); max-width: 46em; }
+.form-group { display: grid; gap: 10px; }
+.form-group + .form-group { border-top: 1px solid var(--line); padding-top: 14px; }
+.form-group h3 { font-size: 0.9rem; }
+.seg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 0.84rem; color: var(--ink-2); }
+.import { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.import summary { cursor: pointer; font-weight: 700; font-size: 0.9rem; color: var(--accent); }
+.import[open] summary { margin-bottom: 10px; }
+.import-body { display: grid; gap: 10px; }
+textarea {
+  font: inherit; font-size: 0.85rem; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--axis); border-radius: 6px; padding: 8px; width: 100%; min-width: 0; resize: vertical;
+}
+textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.preview { display: grid; gap: 8px; }
+.preview table { font-size: 0.8rem; }
+.preview th select { font-size: 0.78rem; padding: 3px 4px; min-width: 7.5em; }
+.preview td, .preview th { text-align: left; }
+.msg { font-size: 0.84rem; }
+.msg.ok { color: var(--good); }
+.msg.err { color: var(--bad); }
 </style>
 </head><!--SKELETON-->
 <body><!--SKELETON-->
@@ -254,40 +285,58 @@ label.f.full { grid-column: 1 / -1; }
     <p class="lede" id="policyLabel"></p>
   </header>
 
-  <section aria-label="今解約した場合" class="now" id="now"></section>
-
-  <section class="card" aria-labelledby="verdictTitle">
-    <h2 id="verdictTitle" hidden>結論</h2>
-    <div class="horizon">
-      <div class="horizon-top">
-        <label for="horizon">何歳まで置いておく？</label>
-        <output id="horizonOut" for="horizon"></output>
-      </div>
-      <input type="range" id="horizon" min="55" max="95" step="1" value="65">
-      <div class="chips" id="chips"></div>
+  <section class="policy-bar" aria-label="保険の切り替え">
+    <label for="policySel">比べる保険</label>
+    <select id="policySel"></select>
+    <div class="btn-row">
+      <button type="button" class="btn" id="pAdd">＋ 新しい保険</button>
+      <button type="button" class="btn" id="pDup">複製</button>
+      <button type="button" class="btn btn-danger" id="pDel">削除</button>
     </div>
-    <p class="headline" id="headline"></p>
-    <div class="opts" id="opts"></div>
-    <p class="breakeven" id="breakeven"></p>
-    <div class="fx" id="fx" hidden></div>
-    <div class="death" id="death"></div>
   </section>
 
-  <section class="card" aria-labelledby="chartTitle">
-    <div class="card-head">
-      <h2 id="chartTitle">解約したときに受け取れる額</h2>
-      <span class="hint">税金を引いた後・単位は万円。グラフに触れると各年の金額が出ます</span>
-    </div>
-    <div class="chart-controls">
-      <div class="seg" role="group" aria-label="グラフの切り替え">
-        <button type="button" id="view-surrender" aria-pressed="true">解約したとき</button>
-        <button type="button" id="view-death" aria-pressed="false">万一のとき</button>
-      </div>
-      <label class="check" for="showBand"><input type="checkbox" id="showBand"> 値動きの幅を表示</label>
-    </div>
-    <div class="legend" id="legend"></div>
-    <div class="chart-box" id="chart" tabindex="0" aria-label="受け取れる額の推移グラフ。左右キーで年齢を移動できます"></div>
+  <section class="card empty-state" id="emptyState" hidden>
+    <h2>数字を入れると比較が表示されます</h2>
+    <p id="emptyText"></p>
+    <button type="button" class="btn" id="goData">保険のデータを入力する</button>
   </section>
+
+  <div class="wrap-inner" id="results" style="display: contents;">
+    <section aria-label="今解約した場合" class="now" id="now"></section>
+
+    <section class="card" aria-labelledby="verdictTitle">
+      <h2 id="verdictTitle" hidden>結論</h2>
+      <div class="horizon">
+        <div class="horizon-top">
+          <label for="horizon">何歳まで置いておく？</label>
+          <output id="horizonOut" for="horizon"></output>
+        </div>
+        <input type="range" id="horizon" min="55" max="95" step="1" value="65">
+        <div class="chips" id="chips"></div>
+      </div>
+      <p class="headline" id="headline"></p>
+      <div class="opts" id="opts"></div>
+      <p class="breakeven" id="breakeven"></p>
+      <div class="fx" id="fx" hidden></div>
+      <div class="death" id="death"></div>
+    </section>
+
+    <section class="card" aria-labelledby="chartTitle">
+      <div class="card-head">
+        <h2 id="chartTitle">解約したときに受け取れる額</h2>
+        <span class="hint">税金を引いた後・単位は万円。グラフに触れると各年の金額が出ます</span>
+      </div>
+      <div class="chart-controls">
+        <div class="seg" role="group" aria-label="グラフの切り替え">
+          <button type="button" id="view-surrender" aria-pressed="true">解約したとき</button>
+          <button type="button" id="view-death" aria-pressed="false">万一のとき</button>
+        </div>
+        <label class="check" for="showBand"><input type="checkbox" id="showBand"> 値動きの幅を表示</label>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div class="chart-box" id="chart" tabindex="0" aria-label="受け取れる額の推移グラフ。左右キーで年齢を移動できます"></div>
+    </section>
+  </div>
 
   <div class="settings">
     <section class="card" aria-labelledby="altTitle">
@@ -310,36 +359,89 @@ label.f.full { grid-column: 1 / -1; }
             <span class="unit"><input type="number" id="waitRate" min="0" max="10" step="0.05"><span>%</span></span>
           </label>
         </div>
+        <div class="btn-row"><button type="button" class="btn" id="resetAlts">乗り換え先を最初の設定に戻す</button></div>
       </div>
     </section>
 
-    <section class="card" aria-labelledby="policyTitle">
+    <section class="card" aria-labelledby="policyTitle" id="policyCard">
       <div class="card-head">
         <h2 id="policyTitle">保険のデータ</h2>
-        <span class="hint">試算書の数字（単位：万円）</span>
+        <div class="seg-row">
+          <span>金額の単位</span>
+          <div class="seg" role="group" aria-label="金額の単位">
+            <button type="button" id="unit-man" aria-pressed="true">万円</button>
+            <button type="button" id="unit-yen" aria-pressed="false">円</button>
+          </div>
+        </div>
       </div>
-      <div class="two">
-        <label class="f" for="p-age">今の年齢<span class="unit"><input type="number" id="p-age" step="1"><span>歳</span></span></label>
-        <label class="f" for="p-year">今の西暦<span class="unit"><input type="number" id="p-year" step="1"><span>年</span></span></label>
-        <label class="f" for="p-surr">今の解約返戻金<span class="unit"><input type="number" id="p-surr" step="0.01"><span>万円</span></span></label>
-        <label class="f" for="p-div">配当金等<span class="unit"><input type="number" id="p-div" step="0.01"><span>万円</span></span></label>
-        <label class="f" for="p-prem">払い込んだ保険料の合計<span class="unit"><input type="number" id="p-prem" step="0.01"><span>万円</span></span></label>
-        <label class="f" for="taxRate">あなたの所得税＋住民税の税率<span class="unit"><input type="number" id="taxRate" min="0" max="55" step="1"><span>%</span></span></label>
-        <label class="f full" for="p-death">死亡保険金額（保険証券に記載。空欄なら万一のときの比較はしません）<span class="unit"><input type="number" id="p-death" min="0" step="1" placeholder="例：300"><span>万円</span></span></label>
+
+      <div class="form-group">
+        <label class="f" for="p-name">保険の名前（会社名・商品名など）<input type="text" id="p-name" maxlength="40"></label>
+        <div class="two">
+          <label class="f" for="p-age">今の年齢<span class="unit"><input type="number" id="p-age" step="1"><span>歳</span></span></label>
+          <label class="f" for="p-year">今の西暦<span class="unit"><input type="number" id="p-year" step="1"><span>年</span></span></label>
+          <label class="f full" for="p-contract">契約した年（西暦）※経過年数で入力するときに使います<span class="unit"><input type="number" id="p-contract" step="1" placeholder="例：2016"><span>年</span></span></label>
+        </div>
       </div>
-      <div class="sub-block">
+
+      <div class="form-group">
+        <h3>今解約した場合（試算書の数字）</h3>
+        <div class="two">
+          <label class="f" for="p-surr">今の解約返戻金<span class="unit"><input type="number" id="p-surr" step="0.01"><span class="mu">万円</span></span></label>
+          <label class="f" for="p-div">配当金など（一緒に受け取る分）<span class="unit"><input type="number" id="p-div" step="0.01"><span class="mu">万円</span></span></label>
+          <label class="f" for="p-ded">差し引かれる額（貸付金など）<span class="unit"><input type="number" id="p-ded" step="0.01"><span class="mu">万円</span></span></label>
+          <label class="f" for="p-prem">これまでに払った保険料の合計<span class="unit"><input type="number" id="p-prem" step="0.01"><span class="mu">万円</span></span></label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <h3>これから払う保険料（払い終わっていれば0）</h3>
+        <div class="two">
+          <label class="f" for="p-annual">1年あたりの保険料<span class="unit"><input type="number" id="p-annual" step="0.01" min="0"><span class="mu-y">万円/年</span></span></label>
+          <label class="f" for="p-payend">払い終わる年齢（空欄なら一生払う）<span class="unit"><input type="number" id="p-payend" step="1" placeholder="例：60"><span>歳</span></span></label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <h3>保障と税金</h3>
+        <div class="two">
+          <label class="f" for="p-death">死亡保険金額（空欄なら比較しません）<span class="unit"><input type="number" id="p-death" min="0" step="1"><span class="mu">万円</span></span></label>
+          <label class="f" for="taxRate">あなたの所得税＋住民税の税率<span class="unit"><input type="number" id="taxRate" min="0" max="55" step="1"><span>%</span></span></label>
+        </div>
+      </div>
+
+      <div class="form-group">
         <h3>今後の解約返戻金（試算書の表）</h3>
-        <div class="rows-head"><span>年齢</span><span>解約返戻金（万円）</span><span></span></div>
+        <div class="seg-row">
+          <span>行の見出し</span>
+          <div class="seg" role="group" aria-label="行の見出し">
+            <button type="button" id="key-age" aria-pressed="true">年齢</button>
+            <button type="button" id="key-elapsed" aria-pressed="false">経過年数</button>
+            <button type="button" id="key-year" aria-pressed="false">西暦</button>
+          </div>
+        </div>
+        <details class="import" id="importBox">
+          <summary>試算書の表をまとめて貼り付ける</summary>
+          <div class="import-body">
+            <p class="hint">PDFやExcelの表をコピーして貼り付け、「読み取る」を押してください。1行に「年齢・西暦・経過年数のどれか」と「解約返戻金」があれば読み取れます。</p>
+            <label class="f" for="pasteText">貼り付ける場所
+              <textarea id="pasteText" rows="6" placeholder="例：&#10;10年 (2036年) 55歳 360.00万円 324.72万円 90.2%&#10;11年 (2037年) 56歳 378.00万円 342.58万円 90.6%"></textarea>
+            </label>
+            <div class="btn-row"><button type="button" class="btn" id="parseBtn">読み取る</button></div>
+            <div class="preview" id="preview"></div>
+          </div>
+        </details>
+        <div class="rows-head"><span id="rowKeyHead">年齢</span><span id="rowValHead">解約返戻金（万円）</span><span></span></div>
         <div class="rows" id="rows"></div>
         <div class="btn-row">
           <button type="button" class="btn" id="addRow">行を追加</button>
-          <button type="button" class="btn" id="reset">試算書の数字に戻す</button>
+          <button type="button" class="btn" id="reset">この保険を最初の数字に戻す</button>
         </div>
       </div>
     </section>
   </div>
 
-  <section class="card" aria-labelledby="tableTitle">
+  <section class="card" aria-labelledby="tableTitle" id="tableCard">
     <div class="card-head">
       <h2 id="tableTitle">年齢ごとの比較表</h2>
       <span class="hint">税金を引いた後・万円。▲は保険より多い。小さい数字は値動きの幅</span>
@@ -350,21 +452,23 @@ label.f.full { grid-column: 1 / -1; }
   <section class="notes card" aria-labelledby="notesTitle">
     <h2 id="notesTitle">前提と注意</h2>
     <ul>
-      <li>保険の将来の金額は、試算書の「今後の解約返戻金の推移」（予想額）です。表にない年齢は、前後の年から計算した概算です。</li>
-      <li>配当金は、今たまっている分だけを足しています。今後増える配当金は不確かなので入れていません。</li>
+      <li>入力した数字は、使っているブラウザの中だけに保存されます。ほかの人やサーバーには送られません。</li>
+      <li>保険の将来の金額は、入力した「今後の解約返戻金」の表（試算書の予想額）です。表にない年齢は、前後の年から計算した概算です。</li>
+      <li>保険料を払っている途中の保険は、続けた場合に払う保険料と同じ額を、乗り換えた場合も毎月積み立てる前提で比べています。</li>
+      <li>配当金は、今たまっている分だけを足しています。今後増える配当金は不確かなので入れていません。貸付金など差し引かれる額は、将来も同じ額が差し引かれる前提です（利息は考えていません）。</li>
       <li>解約で受け取るお金は「一時所得」として、もうけから50万円を引き、その半分に税率をかけて税金を計算しています。同じ年にほかの一時所得（満期金など）があると、50万円の枠を分け合います。</li>
       <li>預金・国債の利息には20.315%の税金がかかる前提です。NISAは非課税、特定口座は売るときにもうけに20.315%かかる前提です。</li>
       <li>乗り換え先が保険（税金のかかり方「一時所得」）の場合は、(受取額 − 払い込んだ額 − 50万円) × 1/2 に「所得税＋住民税の税率」をかけています。年利には、その保険の返戻率を1年あたりに直した数字を入れてください（例：10年後に返戻率110%なら年約0.96%）。</li>
       <li><span class="tag">仮</span>「保険（ドル建て）」の年3.5%（ドルでの利回り）は仮の数字です。外貨建て保険は商品によって年3〜5%程度とされますが、実際に検討する保険の数字に書き換えてください。</li>
       <li><span class="tag">仮</span>今の為替 1ドル＝159円は、2026年11月18日の東京市場の値です（<a href="https://www.boj.or.jp/en/statistics/market/forex/fxdaily/fxlist/fx261118.pdf" target="_blank" rel="noopener">日本銀行</a>）。為替のぶれ幅 年10%は過去のドル円の動きをもとにした目安、両替の手数料 片道0.5円（1ドルあたり）は会社によって違う仮の数字です。</li>
-      <li>ドル建ての為替は、すべて1ドルあたりの円です。円をドルに替えるときと、ドルを円に戻すときに手数料がかかる前提です。「受け取る時の為替」は選んだ年齢の時点の真ん中の想定で、それまでの年は少しずつ近づくとして計算しています。毎月分けて移す場合も今の為替で替える前提の概算です。外貨預金の為替差益にかかる税金は考えていません。</li>
+      <li>ドル建ての為替は、すべて1ドルあたりの円です。円をドルに替えるときと、ドルを円に戻すときに手数料がかかる前提です。「受け取る時の為替」は選んだ年齢の時点の真ん中の想定で、それまでの年は少しずつ近づくとして計算しています。積み立てる分も今の為替で替える前提の概算です。外貨預金の為替差益にかかる税金は考えていません。</li>
       <li>乗り換え先が保険の場合も、その保険の死亡保障は計算に入れていません（「万一のとき」は解約返戻金の額で比べています）。</li>
       <li><span class="tag">仮</span>定期預金0.5%は、2026年のメガバンクの水準をもとにした仮の数字です。ネット銀行では1%を超える例もあります。</li>
       <li><span class="tag">仮</span>個人向け国債（変動10年）1.85%は、2026年11月募集分の最初の利率です。半年ごとに見直されるため、将来の利率はわかりません（<a href="https://www.mof.go.jp/jgbs/individual/kojinmuke/main/issue/hendou10/" target="_blank" rel="noopener">財務省</a>）。</li>
       <li><span class="tag">仮</span>NISAの年4%は、投資信託の「ならした平均」の仮置きです。元本は保証されず、年によっては大きく減ることもあります。</li>
       <li><span class="tag">仮</span>NISAの「1年のぶれ幅15%」は、全世界株式の過去の値動きをもとにした仮の数字です。うすい帯と「値動きの幅」は、10回のうち8回はこの範囲に入る幅です（上と下に1回ずつは外れます）。</li>
       <li>値動きの幅と「保険を下回る確率」は、統計でよく使う考え方（対数正規分布）での概算です。実際の相場はこの通りには動きません。</li>
-      <li>死亡保険金は金額が一定で、契約者と被保険者があなた、受取人がご家族という前提です（解約返戻金の方が多い年はその額）。死亡保険金には相続税の非課税枠（500万円×法定相続人の数）がありますが、この比較では相続税は考えていません。</li>
+      <li>死亡保険金は金額が一定で、契約者と被保険者が本人、受取人が家族という前提です（解約返戻金の方が多い年はその額）。死亡保険金には相続税の非課税枠（500万円×法定相続人の数）がありますが、この比較では相続税は考えていません。</li>
       <li>預金・国債の利回りは毎年同じとして計算しています。試算書の時期（契約応当日）と今の数か月のずれは無視しています。</li>
     </ul>
   </section>
@@ -375,19 +479,23 @@ label.f.full { grid-column: 1 / -1; }
   'use strict';
 
   var TAX = 0.20315;
-  var KEY = 'hoken-norikae-v2';
+  var KEY = 'hoken-norikae-v3';
+  var LEGACY_KEY = 'hoken-norikae-v2';
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var Z = 1.2815516; /* 10回中8回の幅（上下10%点） */
 
   /* POLICY_DATA_START */
-  var DEFAULT_POLICY = {
-    label: 'サンプルの数字（例：払込200万円の保険）で計算しています。下の「保険のデータ」をご自分の試算書の数字に書き換えてください。',
-    currentAge: 50,
-    currentYear: 2026,
-    surrenderNow: 206.0,
-    dividend: 2.0,
-    premiums: 200.0,
-    deathBenefit: 300,
-    table: [[51, 207.85], [52, 209.72], [53, 211.61], [54, 213.51], [55, 215.43], [56, 217.37], [57, 219.33], [58, 221.30], [59, 223.30], [60, 225.31], [65, 235.61], [70, 246.38], [75, 257.65], [80, 269.43], [85, 281.75], [90, 294.63]]
-  };
+  var DATA_VERSION = 1;
+  var DEFAULT_POLICIES = [{
+    id: 'sample1',
+    name: 'サンプルの終身保険',
+    note: 'これは架空のサンプルです。「＋ 新しい保険」から、ご自分の試算書の数字を入れてください。',
+    builtin: true,
+    currentAge: 45, currentYear: 2026, contractYear: 2016,
+    surrenderNow: 150.0, dividend: 0, deduction: 0, premiums: 180.0,
+    annualPremium: 18, payEndAge: 60, deathBenefit: 500,
+    table: [[2027, 167.16], [2028, 184.39], [2029, 201.69], [2030, 219.05], [2031, 236.49], [2032, 254.00], [2033, 271.57], [2034, 289.22], [2035, 306.93], [2036, 324.72], [2037, 342.58], [2038, 360.51], [2039, 378.51], [2040, 396.59], [2041, 414.73], [2046, 429.45], [2051, 444.70], [2056, 460.48], [2061, 476.82], [2066, 493.75], [2071, 511.27]]
+  }];
   /* POLICY_DATA_END */
 
   /* 為替の既定値（仮）：1ドル＝159円（2026年11月18日）、ぶれ幅 年10%、手数料 片道0.5円 */
@@ -401,41 +509,89 @@ label.f.full { grid-column: 1 / -1; }
   var DEFAULTS = { horizonAge: 65, mode: 'lump', months: 24, waitRate: 0.4, oneTimeTaxRate: 20, chartView: 'surrender', showBand: true };
   var COLORS = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)', 'var(--s5)'];
   var TAX_LABEL = { interest: '利息に課税', free: '非課税', onsale: '売却時に課税', ichiji: '一時所得（保険）' };
-  var SVGNS = 'http://www.w3.org/2000/svg';
-  var Z = 1.2815516; /* 10回中8回の幅（上下10%点） */
+  var KEY_LABEL = { age: '年齢', elapsed: '経過年数', year: '西暦' };
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
-  function sig() { return DEFAULT_POLICY.label + '|' + DEFAULT_POLICY.premiums + '|' + DEFAULT_POLICY.surrenderNow; }
+  function newId() { return 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1000); }
+
+  /* ---------- 保存と読み込み ---------- */
+  function normalizePolicy(p) {
+    var d = { name: '名前なしの保険', note: '', builtin: false, edited: true, currentAge: 50, currentYear: 2026, contractYear: null,
+      surrenderNow: 0, dividend: 0, deduction: 0, premiums: 0, annualPremium: 0, payEndAge: null, deathBenefit: null, table: [] };
+    for (var k in d) if (p[k] === undefined) p[k] = d[k];
+    if (!p.id) p.id = newId();
+    return p;
+  }
+  function blankPolicy(base) {
+    return normalizePolicy({
+      id: newId(), name: '新しい保険', edited: true,
+      currentAge: base ? base.currentAge : 50, currentYear: base ? base.currentYear : 2026
+    });
+  }
+  function normalizeAlts(alts) {
+    alts = alts || [];
+    for (var i = alts.length; i < DEFAULT_ALTS.length; i++) alts.push(clone(DEFAULT_ALTS[i]));
+    alts.forEach(function (a, j) {
+      if (a.fx) return;
+      var untouched = j === 3 && a.name === '保険（一時払など）' && a.rate === 1 && a.tax === 'ichiji' && !a.vol;
+      if (untouched) alts[j] = clone(DEFAULT_ALTS[3]); else a.fx = fxDefault(false);
+    });
+    return alts;
+  }
   function fresh() {
     var s = clone(DEFAULTS);
-    s.policy = clone(DEFAULT_POLICY);
+    s.policies = clone(DEFAULT_POLICIES).map(function (p) { p.edited = false; return normalizePolicy(p); });
+    if (!s.policies.length) s.policies.push(blankPolicy());
+    s.current = 0;
     s.alts = clone(DEFAULT_ALTS);
-    s.horizonAge = Math.max(DEFAULTS.horizonAge, DEFAULT_POLICY.currentAge + 1);
+    s.ui = { key: 'age', unit: 'man' };
+    s.dataVersion = DATA_VERSION;
     return s;
   }
   function load() {
-    try {
-      var raw = localStorage.getItem(KEY);
-      if (!raw) return null;
-      var o = JSON.parse(raw);
-      if (o && o.policy && o.alts && o.sig === sig()) {
-        for (var i = o.alts.length; i < DEFAULT_ALTS.length; i++) o.alts.push(clone(DEFAULT_ALTS[i]));
-        o.alts.forEach(function (a, j) {
-          if (a.fx) return;
-          /* 前の版の「保険（一時払など）」を変えていなければ、ドル建ての既定に置き換える */
-          var untouched = j === 3 && a.name === '保険（一時払など）' && a.rate === 1 && a.tax === 'ichiji' && !a.vol;
-          if (untouched) o.alts[j] = clone(DEFAULT_ALTS[3]); else a.fx = fxDefault(false);
+    var o = null;
+    try { var raw = localStorage.getItem(KEY); if (raw) o = JSON.parse(raw); } catch (e) { o = null; }
+    if (o && o.policies && o.policies.length && o.alts) {
+      o.policies.forEach(normalizePolicy);
+      if (o.dataVersion !== DATA_VERSION) {
+        /* 自分で変えていない最初からの保険は、新しい数字に入れ替える */
+        DEFAULT_POLICIES.forEach(function (d) {
+          for (var i = 0; i < o.policies.length; i++) {
+            if (o.policies[i].id === d.id && !o.policies[i].edited) { var np = normalizePolicy(clone(d)); np.edited = false; o.policies[i] = np; }
+          }
         });
-        return o;
+        o.dataVersion = DATA_VERSION;
       }
-    } catch (e) { /* 保存領域が使えない場合は既定値で動かす */ }
+      for (var k in DEFAULTS) if (o[k] === undefined) o[k] = DEFAULTS[k];
+      if (!o.ui) o.ui = { key: 'age', unit: 'man' };
+      o.alts = normalizeAlts(o.alts);
+      if (!(o.current >= 0 && o.current < o.policies.length)) o.current = 0;
+      return o;
+    }
+    /* 前の版（保険1つだけ）の保存データを引き継ぐ */
+    try {
+      var old = JSON.parse(localStorage.getItem(LEGACY_KEY) || 'null');
+      if (old && old.policy && old.alts) {
+        var s = fresh(), op = old.policy, base = s.policies[0];
+        var np2 = clone(base);
+        ['currentAge', 'currentYear', 'surrenderNow', 'dividend', 'premiums'].forEach(function (k) { if (op[k] != null) np2[k] = op[k]; });
+        np2.deathBenefit = op.deathBenefit == null ? null : op.deathBenefit;
+        np2.table = (op.table || []).map(function (r) { return [op.currentYear + (r[0] - op.currentAge), r[1]]; });
+        var same = ['currentAge', 'currentYear', 'surrenderNow', 'dividend', 'premiums', 'deathBenefit'].every(function (k) { return np2[k] === base[k]; }) &&
+          JSON.stringify(np2.table) === JSON.stringify(base.table);
+        np2.edited = !same;
+        s.policies[0] = normalizePolicy(np2);
+        ['horizonAge', 'mode', 'months', 'waitRate', 'oneTimeTaxRate', 'chartView', 'showBand'].forEach(function (k) { if (old[k] != null) s[k] = old[k]; });
+        s.alts = normalizeAlts(old.alts);
+        return s;
+      }
+    } catch (e) { /* 読めなければ最初の状態で始める */ }
     return null;
   }
-  function save() {
-    try { S.sig = sig(); localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 無視 */ }
-  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 保存できなくても動かす */ } }
 
   var S = load() || fresh();
+  function P() { return S.policies[S.current]; }
 
   /* ---------- 表示用の小道具 ---------- */
   function $(id) { return document.getElementById(id); }
@@ -454,20 +610,27 @@ label.f.full { grid-column: 1 / -1; }
   function f1(v) { return v.toLocaleString('ja-JP', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
   function signed(v) { return (v >= 0 ? '+' : '−') + f1(Math.abs(v)) + '万円'; }
   function pct(v, d) { return (v == null ? '—' : v.toFixed(d == null ? 2 : d) + '%'); }
+  function yen(v) { return Math.round(v).toLocaleString('ja-JP') + '円'; }
   function shortName(name) {
     var s = String(name).replace(/（[^）]*）|\([^)]*\)/g, '').trim() || String(name);
     return s.length > 7 ? s.slice(0, 7) + '…' : s;
   }
+  function pctInt(p) { var v = Math.round(p * 100); return v < 1 && p > 0 ? '1%未満' : v > 99 && p < 1 ? '99%超' : v + '%'; }
 
   /* ---------- 保険の計算 ---------- */
+  function ageOfYear(y) { var p = P(); return p.currentAge + (y - p.currentYear); }
+  function yearOfAge(a) { var p = P(); return p.currentYear + (a - p.currentAge); }
+  function yearsTo(age) { return age - P().currentAge; }
   function points() {
-    var p = S.policy;
+    var p = P();
     var rows = p.table
-      .filter(function (r) { return isFinite(r[0]) && isFinite(r[1]) && r[0] > p.currentAge && r[1] > 0; })
-      .map(function (r) { return [r[0], r[1]]; })
+      .filter(function (r) { return isFinite(r[0]) && isFinite(r[1]) && r[1] > 0; })
+      .map(function (r) { return [ageOfYear(r[0]), r[1]]; })
+      .filter(function (r) { return r[0] > p.currentAge; })
       .sort(function (a, b) { return a[0] - b[0]; });
     return [[p.currentAge, p.surrenderNow]].concat(rows);
   }
+  function ready() { var p = P(); return p.surrenderNow > 0 && p.premiums > 0 && points().length >= 2; }
   function lastAge() { var pts = points(); return pts[pts.length - 1][0]; }
   function surrenderAt(age) {
     var pts = points();
@@ -481,55 +644,67 @@ label.f.full { grid-column: 1 / -1; }
     }
     return null;
   }
-  /* 一時所得：(受取額 − 払込保険料 − 50万円) × 1/2 に税率 */
-  function oneTimeTax(pay) {
-    var taxable = Math.max(0, pay - S.policy.premiums - 50) / 2;
-    return taxable * S.oneTimeTaxRate / 100;
+  /* これから払う保険料：その年齢までに払う年数 */
+  function payYearsTo(age) {
+    var p = P();
+    if (!(p.annualPremium > 0)) return 0;
+    var end = p.payEndAge != null ? p.payEndAge : Infinity;
+    return Math.max(0, Math.min(age, end) - p.currentAge);
   }
-  function payoutAt(age) { var v = surrenderAt(age); return v == null ? null : v + S.policy.dividend; }
-  function insNet(age) { var pay = payoutAt(age); return pay == null ? null : pay - oneTimeTax(pay); }
-  function hasDeath() { return S.policy.deathBenefit != null && S.policy.deathBenefit > 0; }
-  /* 万一のとき：死亡保険金（解約返戻金の方が多ければその額）＋たまっている配当金 */
+  function premiumsTo(age) { return P().premiums + (P().annualPremium || 0) * payYearsTo(age); }
+  /* 一時所得：(受取額 − 払い込んだ額 − 50万円) × 1/2 に所得税＋住民税の税率 */
+  function ichijiTax(pay, basis) { return Math.max(0, pay - basis - 50) / 2 * S.oneTimeTaxRate / 100; }
+  function insNet(age) {
+    var v = surrenderAt(age);
+    if (v == null) return null;
+    var p = P(), gross = v + p.dividend;
+    return gross - p.deduction - ichijiTax(gross, premiumsTo(age));
+  }
+  function startAmount() { return Math.max(0, insNet(P().currentAge)); }
+  function paying() { return P().annualPremium > 0 && (P().payEndAge == null || P().payEndAge > P().currentAge); }
+  function hasDeath() { return P().deathBenefit != null && P().deathBenefit > 0; }
   function insDeath(age) {
     if (!hasDeath()) return null;
     var v = surrenderAt(age);
-    return v == null ? null : Math.max(S.policy.deathBenefit, v) + S.policy.dividend;
+    return v == null ? null : Math.max(P().deathBenefit, v) + P().dividend - P().deduction;
   }
-  /* 保障の上乗せ：死亡保険金 − その時の解約返戻金 */
   function extraCover(age) {
     var v = surrenderAt(age);
-    return hasDeath() && v != null ? Math.max(0, S.policy.deathBenefit - v) : null;
+    return hasDeath() && v != null ? Math.max(0, P().deathBenefit - v) : null;
   }
-  function startAmount() { return insNet(S.policy.currentAge); }
-  function yearsTo(age) { return age - S.policy.currentAge; }
-  function yearOf(age) { return S.policy.currentYear + yearsTo(age); }
 
   /* ---------- 乗り換え先の計算（月ごとに複利で積み上げる） ---------- */
-  function altNet(alt, yrs, z, fxLevel) {
-    var A = startAmount();
+  function isFx(alt) { return !!(alt.fx && alt.fx.on); }
+  function hasVol(alt) { return (alt.vol || 0) > 0 || (isFx(alt) && (alt.fx.vol || 0) > 0); }
+  function fxMedianAt(fx, yrs) {
+    var th = Math.max(1, yearsTo(S.horizonAge));
+    return fx.now * Math.pow(fx.future / fx.now, yrs / th);
+  }
+  /* alt: 乗り換え先、yrs: 何年後、z: 値動きのずれ（0なら真ん中）、fxLevel: 為替を指定するとき、noSpread: 移し方を一括に固定 */
+  function sim(alt, yrs, z, fxLevel, noSpread) {
+    var p = P(), A = startAmount();
     var r = alt.rate / 100;
     var annual = alt.tax === 'interest' ? r * (1 - TAX) : r;
     var rm = Math.pow(1 + annual, 1 / 12) - 1;
     var wm = Math.pow(1 + (S.waitRate / 100) * (1 - TAX), 1 / 12) - 1;
-    var N = S.mode === 'monthly' ? Math.max(1, Math.round(S.months)) : 1;
+    var N = !noSpread && S.mode === 'monthly' ? Math.max(1, Math.round(S.months)) : 1;
     var total = Math.max(0, Math.round(yrs * 12));
-    var cash = A, inv = 0, basis = 0;
-    if (N === 1) { inv = A; basis = A; cash = 0; }
+    var payM = Math.min(total, Math.round(payYearsTo(p.currentAge + yrs) * 12));
+    var pm = (p.annualPremium || 0) / 12;
+    var cash = A, inv = 0, basis = 0, wsum = 0, wt = 0;
+    if (N === 1) { inv = A; basis = A; cash = 0; wsum += A; wt += A * total; }
     for (var m = 0; m < total; m++) {
-      if (N > 1 && m < N) { var x = A / N; cash -= x; inv += x; basis += x; }
+      if (N > 1 && m < N) { var x = A / N; cash -= x; inv += x; basis += x; wsum += x; wt += x * (total - m); }
+      if (m < payM && pm > 0) { inv += pm; basis += pm; wsum += pm; wt += pm * (total - m); }
       cash *= 1 + wm;
       inv *= 1 + rm;
     }
-    /* 値動き：z は「平均から何段ずれたか」。投資していた平均の年数でぶれ幅を広げる。
-       ドル建ては、商品の値動きと為替の値動きを合わせたぶれ幅にする */
+    /* 値動き：投資していた平均の年数でぶれ幅を広げる。ドル建ては商品と為替のぶれを合わせる */
     var fx = isFx(alt) ? alt.fx : null;
     var vol = (alt.vol || 0) / 100, fv = fx ? (fx.vol || 0) / 100 : 0;
     var tv = Math.sqrt(vol * vol + fv * fv);
-    if (z && tv > 0 && inv > 0 && total > 0) {
-      var K = N === 1 ? 1 : Math.min(N, total);
-      var teff = (total - (K - 1) / 2) / 12;
-      inv *= Math.exp(z * tv * Math.sqrt(teff));
-    }
+    var teff = wsum > 0 ? wt / wsum / 12 : 0;
+    if (z && tv > 0 && inv > 0 && teff > 0) inv *= Math.exp(z * tv * Math.sqrt(teff));
     /* ドル建て：今の為替＋手数料でドルに替え、受け取る時の為替−手数料で円に戻す */
     if (fx && inv > 0) {
       var level = fxLevel != null ? fxLevel : fxMedianAt(fx, yrs);
@@ -537,38 +712,17 @@ label.f.full { grid-column: 1 / -1; }
     }
     var val = Math.max(0, cash) + inv;
     if (alt.tax === 'onsale') val -= Math.max(0, inv - basis) * TAX;
-    /* 保険：一時所得 (受取額 − 払い込んだ額 − 50万円) × 1/2 に所得税＋住民税の税率 */
-    if (alt.tax === 'ichiji') val -= Math.max(0, inv - basis - 50) / 2 * S.oneTimeTaxRate / 100;
+    if (alt.tax === 'ichiji') val -= ichijiTax(inv, basis);
     return val;
   }
-  function isFx(alt) { return !!(alt.fx && alt.fx.on); }
-  function hasVol(alt) { return (alt.vol || 0) > 0 || (isFx(alt) && (alt.fx.vol || 0) > 0); }
-  /* 為替の真ん中の想定：今の為替から、選んだ年齢の時点の想定まで少しずつ動く */
-  function fxMedianAt(fx, yrs) {
-    var th = Math.max(1, yearsTo(S.horizonAge));
-    return fx.now * Math.pow(fx.future / fx.now, yrs / th);
-  }
-  /* 保険を続けた場合と同じになる為替（これより円高だと保険のほうが得） */
-  function breakevenFx(alt, age) {
-    var target = insNet(age), yrs = yearsTo(age);
-    var lo = alt.fx.fee + 0.01, hi = 2000;
-    if (altNet(alt, yrs, 0, lo) >= target) return lo;
-    if (altNet(alt, yrs, 0, hi) < target) return null;
-    for (var i = 0; i < 60; i++) {
-      var mid = (lo + hi) / 2;
-      if (altNet(alt, yrs, 0, mid) < target) lo = mid; else hi = mid;
-    }
-    return (lo + hi) / 2;
-  }
-  function yen(v) { return Math.round(v).toLocaleString('ja-JP') + '円'; }
+  function altNet(alt, yrs, z) { return sim(alt, yrs, z, null, false); }
   function altRange(alt, yrs) { return { lo: altNet(alt, yrs, -Z), hi: altNet(alt, yrs, Z) }; }
   function normCdf(x) {
     var t = 1 / (1 + 0.2316419 * Math.abs(x));
     var d = 0.3989423 * Math.exp(-x * x / 2);
-    var p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
-    return x > 0 ? 1 - p : p;
+    var q = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return x > 0 ? 1 - q : q;
   }
-  /* 乗り換え先が target を下回る確率 */
   function probBelow(alt, yrs, target) {
     if (!hasVol(alt) || yrs <= 0) return altNet(alt, yrs, 0) < target ? 1 : 0;
     var lo = -8, hi = 8;
@@ -580,38 +734,98 @@ label.f.full { grid-column: 1 / -1; }
     }
     return normCdf((lo + hi) / 2);
   }
-  function pctInt(p) { var v = Math.round(p * 100); return v < 1 && p > 0 ? '1%未満' : v > 99 && p < 1 ? '99%超' : v + '%'; }
-  /* 保険を続けた場合と同じになる「乗り換え先の利回り」 */
-  function breakeven(tax, age) {
-    var target = insNet(age), yrs = yearsTo(age);
+  /* 指定の受取額と同じになる利回りを逆算 */
+  function solveRate(tax, yrs, target, noSpread) {
     if (yrs <= 0 || target == null) return null;
-    var lo = -10, hi = 30;
+    var lo = -30, hi = 30;
+    function f(r) { return sim({ rate: r, tax: tax }, yrs, 0, null, noSpread); }
+    if (f(lo) >= target) return lo;
+    if (f(hi) < target) return null;
     for (var i = 0; i < 60; i++) {
       var mid = (lo + hi) / 2;
-      if (altNet({ rate: mid, tax: tax }, yrs) < target) lo = mid; else hi = mid;
+      if (f(mid) < target) lo = mid; else hi = mid;
     }
     return (lo + hi) / 2;
   }
-  function insYield(age) {
-    var y = yearsTo(age), A = startAmount(), T = insNet(age);
-    if (y <= 0 || T == null || A <= 0) return null;
-    return (Math.pow(T / A, 1 / y) - 1) * 100;
+  function breakeven(tax, age) { return solveRate(tax, yearsTo(age), insNet(age), false); }
+  /* 保険を続けた場合の利回り（税引後・保険料込み） */
+  function insYield(age) { return solveRate('free', yearsTo(age), insNet(age), true); }
+  function breakevenFx(alt, age) {
+    var target = insNet(age), yrs = yearsTo(age);
+    var lo = alt.fx.fee + 0.01, hi = 2000;
+    if (sim(alt, yrs, 0, lo) >= target) return lo;
+    if (sim(alt, yrs, 0, hi) < target) return null;
+    for (var i = 0; i < 60; i++) {
+      var mid = (lo + hi) / 2;
+      if (sim(alt, yrs, 0, mid) < target) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
   }
   function activeAlts() {
     return S.alts.map(function (a, i) { return { alt: a, i: i }; }).filter(function (x) { return x.alt.on; });
   }
 
+  /* ---------- 保険の切り替え ---------- */
+  function renderPolicyBar() {
+    var sel = $('policySel'); sel.textContent = '';
+    S.policies.forEach(function (p, i) {
+      var op = el('option', null, p.name || ('保険' + (i + 1)));
+      op.value = String(i);
+      if (i === S.current) op.selected = true;
+      sel.appendChild(op);
+    });
+    $('pDel').disabled = S.policies.length <= 1;
+    var def = DEFAULT_POLICIES.filter(function (d) { return d.id === P().id; })[0];
+    $('reset').hidden = !def;
+  }
+  function switchTo(i) {
+    S.current = i;
+    fillPolicyFields(); buildRows(); renderPolicyBar(); update();
+  }
+  var delArmed = null;
+  function bindPolicyBar() {
+    $('policySel').addEventListener('change', function () { switchTo(+this.value); });
+    $('pAdd').addEventListener('click', function () {
+      S.policies.push(blankPolicy(P()));
+      switchTo(S.policies.length - 1);
+      $('p-name').focus(); $('p-name').select();
+    });
+    $('pDup').addEventListener('click', function () {
+      var c = clone(P()); c.id = newId(); c.name = (c.name || '保険') + '（コピー）'; c.builtin = false; c.edited = true;
+      S.policies.push(c);
+      switchTo(S.policies.length - 1);
+    });
+    $('pDel').addEventListener('click', function () {
+      var b = this;
+      if (S.policies.length <= 1) return;
+      if (!delArmed) {
+        b.textContent = 'もう一度押すと削除';
+        delArmed = setTimeout(function () { b.textContent = '削除'; delArmed = null; }, 4000);
+        return;
+      }
+      clearTimeout(delArmed); delArmed = null; b.textContent = '削除';
+      S.policies.splice(S.current, 1);
+      switchTo(Math.max(0, S.current - 1));
+    });
+    $('goData').addEventListener('click', function () {
+      var c = $('policyCard'); c.scrollIntoView({ block: 'start' }); $('p-surr').focus();
+    });
+  }
+
   /* ---------- 今解約したら ---------- */
   function renderNow() {
-    var p = S.policy, box = $('now');
-    var pay = p.surrenderNow + p.dividend, tax = oneTimeTax(pay), gain = pay - p.premiums;
+    var p = P(), box = $('now');
+    var gross = p.surrenderNow + p.dividend, net = startAmount(), tax = Math.max(0, gross - p.deduction - net);
     box.textContent = '';
     var items = [
-      ['今解約した場合の受取額', f1(pay), '万円', '解約返戻金 ' + f1(p.surrenderNow) + ' ＋ 配当金等 ' + f1(p.dividend)],
-      ['払い込んだ保険料の合計', f1(p.premiums), '万円', '単純返戻率 ' + pct(pay / p.premiums * 100, 1)],
-      ['増えた分', signed(gain).replace('万円', ''), '万円', '税金 ' + (tax > 0 ? f1(tax) + '万円' : '0円（50万円の非課税枠内）')],
-      ['乗り換えに回せる額', f1(pay - tax), '万円', p.currentYear + '年・' + p.currentAge + '歳時点']
+      ['今解約した場合の受取額', f1(gross - p.deduction), '万円', '解約返戻金 ' + f1(p.surrenderNow) + ' ＋ 配当金など ' + f1(p.dividend) + (p.deduction > 0 ? ' − 差し引き ' + f1(p.deduction) : '')],
+      ['払い込んだ保険料の合計', f1(p.premiums), '万円', '単純返戻率 ' + pct(gross / p.premiums * 100, 1)],
+      ['増えた分', signed(gross - p.premiums).replace('万円', ''), '万円', '税金 ' + (tax > 0.005 ? f1(tax) + '万円' : '0円（50万円の非課税枠内）')],
+      ['乗り換えに回せる額', f1(net), '万円', p.currentYear + '年・' + p.currentAge + '歳時点']
     ];
+    if (paying()) {
+      items.push(['これから払う保険料', f1(p.annualPremium), '万円/年', (p.payEndAge != null ? p.payEndAge + '歳まで' : '一生払い続ける前提') + '。乗り換えた場合も同じ額を積み立てて比べます']);
+    }
     items.forEach(function (it) {
       var s = el('div', 'stat');
       s.appendChild(el('span', 'stat-label', it[0]));
@@ -621,12 +835,11 @@ label.f.full { grid-column: 1 / -1; }
       s.appendChild(el('span', 'stat-sub', it[3]));
       box.appendChild(s);
     });
-    $('policyLabel').textContent = p.label;
   }
 
   /* ---------- 結論 ---------- */
   function clampHorizon() {
-    var min = S.policy.currentAge + 1, max = lastAge();
+    var min = P().currentAge + 1, max = lastAge();
     if (max < min) max = min;
     S.horizonAge = Math.min(max, Math.max(min, Math.round(S.horizonAge)));
     var r = $('horizon');
@@ -635,7 +848,7 @@ label.f.full { grid-column: 1 / -1; }
   function renderChips() {
     var box = $('chips'); box.textContent = '';
     [60, 65, 70, 75, 80, 85, 90, 95].forEach(function (a) {
-      if (a <= S.policy.currentAge || a > lastAge()) return;
+      if (a <= P().currentAge || a > lastAge()) return;
       var b = el('button', 'chip', a + '歳');
       b.type = 'button';
       b.setAttribute('aria-pressed', String(a === S.horizonAge));
@@ -644,8 +857,8 @@ label.f.full { grid-column: 1 / -1; }
     });
   }
   function renderVerdict() {
-    var age = S.horizonAge, yrs = yearsTo(age);
-    $('horizonOut').textContent = age + '歳（' + yearOf(age) + '年・' + yrs + '年後）';
+    var age = S.horizonAge, yrs = yearsTo(age), p = P();
+    $('horizonOut').textContent = age + '歳（' + yearOfAge(age) + '年・' + yrs + '年後）';
     renderChips();
 
     var base = insNet(age);
@@ -656,8 +869,7 @@ label.f.full { grid-column: 1 / -1; }
     var h = $('headline'); h.textContent = '';
     h.appendChild(document.createTextNode(age + '歳まで置くなら、'));
     if (best) {
-      var s = el('strong', null, '「' + best.x.alt.name + '」に乗り換える');
-      h.appendChild(s);
+      h.appendChild(el('strong', null, '「' + best.x.alt.name + '」に乗り換える'));
       h.appendChild(document.createTextNode('ほうが、保険を続けるより ' + f1(best.v - base) + '万円 多くなる見込みです。'));
       if (hasVol(best.x.alt)) {
         h.appendChild(document.createTextNode('ただし値動きがあるため、約' + pctInt(probBelow(best.x.alt, yrs, base)) + 'の確率で保険を下回ります。'));
@@ -674,7 +886,7 @@ label.f.full { grid-column: 1 / -1; }
     hd.appendChild(k); hd.appendChild(el('span', null, '保険を続ける'));
     c.appendChild(hd);
     var v = el('div', 'opt-val', f1(base)); v.appendChild(el('small', null, '万円')); c.appendChild(v);
-    c.appendChild(el('div', 'opt-sub', '年' + pct(insYield(age)) + 'で増えるのと同じ（税引後）。ほかの欄の ▲▼ はこの額との差です'));
+    c.appendChild(el('div', 'opt-sub', '年' + pct(insYield(age)) + 'で増えるのと同じ（税引後' + (paying() ? '・保険料込み' : '') + '）。ほかの欄の ▲▼ はこの額との差です'));
     box.appendChild(c);
 
     list.forEach(function (o) {
@@ -713,7 +925,11 @@ label.f.full { grid-column: 1 / -1; }
     be.appendChild(el('strong', null, '年' + pct(bf) + '以上'));
     be.appendChild(document.createTextNode('、一時所得になる保険なら '));
     be.appendChild(el('strong', null, '年' + pct(bj) + '以上'));
-    be.appendChild(document.createTextNode(' の利回りが必要です' + (S.mode === 'monthly' ? '（' + S.months + 'か月に分けて移す前提）。' : '。')));
+    var cond = [];
+    if (S.mode === 'monthly') cond.push(S.months + 'か月に分けて移す');
+    if (paying()) cond.push('毎年の保険料' + f1(p.annualPremium) + '万円も同じように積み立てる');
+    be.appendChild(document.createTextNode(' の利回りが必要です' + (cond.length ? '（' + cond.join('・') + '前提）。' : '。')));
+
     renderFx(age, yrs, base);
     renderDeath(age, yrs, list);
   }
@@ -734,7 +950,7 @@ label.f.full { grid-column: 1 / -1; }
         .sort(function (p, q) { return p[0] - q[0]; });
       var list = el('div', 'death-list');
       levels.forEach(function (lv) {
-        var v = altNet(a, yrs, 0, lv[0]), d = v - base;
+        var v = sim(a, yrs, 0, lv[0]), d = v - base;
         var r = el('div', 'death-row');
         r.appendChild(el('span'));
         r.appendChild(el('span', null, '1ドル＝' + yen(lv[0]) + '（' + lv[1] + '）'));
@@ -785,7 +1001,7 @@ label.f.full { grid-column: 1 / -1; }
       r.appendChild(d == null ? el('span', 'diff', '基準') : el('span', 'diff ' + (d >= 0 ? 'good' : 'bad'), (d >= 0 ? '▲ ' : '▼ ') + signed(d)));
       wrap.appendChild(r);
     }
-    row(COLORS[0], '保険を続ける', '死亡保険金＋配当金', baseD, null);
+    row(COLORS[0], '保険を続ける', '死亡保険金＋配当金など', baseD, null);
     list.forEach(function (o) {
       var a = o.x.alt;
       row(COLORS[o.x.i + 1], a.name, hasVol(a) ? '悪いときは ' + f1(altRange(a, yrs).lo) + '万円' : null, o.v, o.v - baseD);
@@ -794,7 +1010,7 @@ label.f.full { grid-column: 1 / -1; }
     var p = el('p', 'death-note');
     p.appendChild(document.createTextNode('解約すると、' + age + '歳の時点で '));
     p.appendChild(el('strong', null, f1(extraCover(age)) + '万円'));
-    p.appendChild(document.createTextNode(' 分の保障（死亡保険金 − その時の解約返戻金）を手放すことになります。この差は年齢が上がるほど小さくなります。'));
+    p.appendChild(document.createTextNode(' 分の保障（死亡保険金 − その時の解約返戻金）を手放すことになります。'));
     box.appendChild(p);
   }
 
@@ -842,12 +1058,13 @@ label.f.full { grid-column: 1 / -1; }
   }
 
   function renderChart() {
+    if (!ready()) return;
     var box = $('chart');
     var W = Math.max(280, Math.round(box.clientWidth || 600));
     var narrow = W < 520;
     var H = narrow ? 270 : 330;
     var m = { l: 46, r: narrow ? 64 : 124, t: 24, b: 32 };
-    var a0 = S.policy.currentAge;
+    var a0 = P().currentAge;
     var a1 = Math.min(lastAge(), Math.max(a0 + 3, S.horizonAge));
     if (a1 <= a0) a1 = a0 + 1;
     var d = buildSeries(a0, a1);
@@ -871,8 +1088,6 @@ label.f.full { grid-column: 1 / -1; }
     function Y(v) { return m.t + (1 - (v - y0) / (y1 - y0)) * ph; }
 
     var root = svg('svg', { viewBox: '0 0 ' + W + ' ' + H, width: W, height: H, role: 'img', 'aria-label': '年齢ごとの受取額（税引後）の折れ線グラフ' });
-
-    // 横の目盛り線と金額
     var step = ticks.length > 1 ? ticks[1] - ticks[0] : 1;
     ticks.forEach(function (t) {
       root.appendChild(svg('line', { x1: m.l, x2: m.l + pw, y1: Y(t), y2: Y(t), stroke: t === y0 ? 'var(--axis)' : 'var(--line)', 'stroke-width': 1 }));
@@ -884,7 +1099,6 @@ label.f.full { grid-column: 1 / -1; }
     unit.textContent = '万円';
     root.appendChild(unit);
 
-    // 年齢の目盛り
     var span = a1 - a0, maxTicks = narrow ? 5 : 9, xs = 1;
     [1, 2, 5, 10].some(function (s) { xs = s; return span / s <= maxTicks; });
     for (var a = Math.ceil(a0 / xs) * xs; a <= a1; a += xs) {
@@ -893,22 +1107,18 @@ label.f.full { grid-column: 1 / -1; }
       root.appendChild(tx);
     }
 
-    // 値動きの幅（うすい帯）
     d.series.forEach(function (s) {
       if (!s.lo) return;
       var top = s.hi.map(function (v, i) { return X(d.ages[i]).toFixed(1) + ' ' + Y(v).toFixed(1); });
       var bot = s.lo.map(function (v, i) { return X(d.ages[i]).toFixed(1) + ' ' + Y(v).toFixed(1); }).reverse();
       root.appendChild(svg('path', { d: 'M' + top.join('L') + 'L' + bot.join('L') + 'Z', fill: s.color, 'fill-opacity': 0.12, stroke: 'none' }));
     });
-
-    // 線
     d.series.forEach(function (s) {
       var path = '';
       s.vals.forEach(function (v, i) { if (v != null) path += (path ? 'L' : 'M') + X(d.ages[i]).toFixed(1) + ' ' + Y(v).toFixed(1); });
       root.appendChild(svg('path', { d: path, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
     });
 
-    // 右端の点とラベル（重なる時は引き出し線）
     var ends = d.series.map(function (s) {
       var v = s.vals[s.vals.length - 1];
       return { s: s, v: v, y: Y(v), ly: Y(v) };
@@ -927,7 +1137,6 @@ label.f.full { grid-column: 1 / -1; }
       root.appendChild(t);
     });
 
-    // なぞった位置の縦線
     var hover = svg('g', { 'pointer-events': 'none', visibility: 'hidden' });
     var vline = svg('line', { y1: m.t, y2: m.t + ph, stroke: 'var(--muted)', 'stroke-width': 1 });
     hover.appendChild(vline);
@@ -951,7 +1160,7 @@ label.f.full { grid-column: 1 / -1; }
       d.series.forEach(function (s, i) { dots[i].setAttribute('cx', x); dots[i].setAttribute('cy', Y(s.vals[idx])); });
       hover.setAttribute('visibility', 'visible');
       tip.textContent = '';
-      tip.appendChild(el('div', 'tip-title', age + '歳（' + yearOf(age) + '年）'));
+      tip.appendChild(el('div', 'tip-title', age + '歳（' + yearOfAge(age) + '年）'));
       d.series.map(function (s) { return { s: s, v: s.vals[idx] }; })
         .sort(function (p, q) { return q.v - p.v; })
         .forEach(function (o) {
@@ -995,22 +1204,23 @@ label.f.full { grid-column: 1 / -1; }
   /* ---------- 比較表 ---------- */
   function renderTable() {
     var t = $('table'); t.textContent = '';
-    var alts = activeAlts();
+    var alts = activeAlts(), p = P();
     var thead = el('thead'), tr = el('tr');
-    ['年齢', '西暦'].forEach(function (h) { tr.appendChild(el('th', null, h)); });
     function th(name, color) {
       var c = el('th');
       if (color) { var k = el('span', 'key'); k.style.background = color; c.appendChild(k); }
       c.appendChild(document.createTextNode(name));
       return c;
     }
+    tr.appendChild(th('年齢')); tr.appendChild(th('西暦'));
+    if (p.contractYear) tr.appendChild(th('経過年数'));
     tr.appendChild(th('保険を続ける', COLORS[0]));
     tr.appendChild(th('保険の利回り'));
     if (hasDeath()) tr.appendChild(th('保障の上乗せ'));
     alts.forEach(function (x) { tr.appendChild(th(shortName(x.alt.name), COLORS[x.i + 1])); });
     thead.appendChild(tr); t.appendChild(thead);
 
-    var ages = points().slice(1).map(function (p) { return p[0]; });
+    var ages = points().slice(1).map(function (q) { return q[0]; });
     if (ages.indexOf(S.horizonAge) < 0) ages.push(S.horizonAge);
     ages = ages.filter(function (a, i, arr) { return arr.indexOf(a) === i; }).sort(function (a, b) { return a - b; });
     var tb = el('tbody');
@@ -1018,7 +1228,8 @@ label.f.full { grid-column: 1 / -1; }
       var row = el('tr', a === S.horizonAge ? 'is-here' : null);
       var base = insNet(a);
       row.appendChild(el('td', null, a + '歳'));
-      row.appendChild(el('td', null, yearOf(a) + '年'));
+      row.appendChild(el('td', null, yearOfAge(a) + '年'));
+      if (p.contractYear) row.appendChild(el('td', null, (yearOfAge(a) - p.contractYear) + '年'));
       row.appendChild(el('td', null, f1(base)));
       row.appendChild(el('td', null, pct(insYield(a))));
       if (hasDeath()) row.appendChild(el('td', null, f1(extraCover(a))));
@@ -1037,7 +1248,7 @@ label.f.full { grid-column: 1 / -1; }
     t.appendChild(tb);
   }
 
-  /* ---------- 設定欄 ---------- */
+  /* ---------- 乗り換え先の設定欄 ---------- */
   function buildAlts() {
     var box = $('alts'); box.textContent = '';
     S.alts.forEach(function (alt, i) {
@@ -1108,38 +1319,195 @@ label.f.full { grid-column: 1 / -1; }
     });
   }
 
+  /* ---------- 保険のデータ欄 ---------- */
+  function isYen() { return S.ui.unit === 'yen'; }
+  function toUnit(v) { return isYen() ? Math.round(v * 10000) : +(+v).toFixed(4); }
+  function fromUnit(n) { return isYen() ? n / 10000 : n; }
+  function effKey() { return S.ui.key === 'elapsed' && !P().contractYear ? 'age' : S.ui.key; }
+  function keyOfYear(y) {
+    var k = effKey();
+    if (k === 'year') return y;
+    if (k === 'elapsed') return y - P().contractYear;
+    return ageOfYear(y);
+  }
+  function yearOfKey(n) {
+    var k = effKey();
+    if (k === 'year') return n;
+    if (k === 'elapsed') return P().contractYear + n;
+    return yearOfAge(n);
+  }
+
+  var POLICY_FIELDS = [
+    ['p-age', 'currentAge', 'int', false, function (n) { return n > 0 && n < 120; }],
+    ['p-year', 'currentYear', 'int', false, function (n) { return n > 1900 && n < 2200; }],
+    ['p-contract', 'contractYear', 'int', true, function (n) { return n > 1900 && n < 2200; }],
+    ['p-surr', 'surrenderNow', 'money', false, function (n) { return n >= 0; }],
+    ['p-div', 'dividend', 'money', false, function (n) { return n >= 0; }],
+    ['p-ded', 'deduction', 'money', false, function (n) { return n >= 0; }],
+    ['p-prem', 'premiums', 'money', false, function (n) { return n >= 0; }],
+    ['p-annual', 'annualPremium', 'money', false, function (n) { return n >= 0; }],
+    ['p-payend', 'payEndAge', 'int', true, function (n) { return n > 0 && n < 130; }],
+    ['p-death', 'deathBenefit', 'money', true, function (n) { return n >= 0; }]
+  ];
+
+  function fillPolicyFields() {
+    var p = P();
+    $('p-name').value = p.name || '';
+    POLICY_FIELDS.forEach(function (f) {
+      var v = p[f[1]], inp = $(f[0]);
+      inp.value = v == null ? '' : (f[2] === 'money' ? toUnit(v) : v);
+      if (f[2] === 'money') inp.step = isYen() ? '1' : '0.01';
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.mu'), function (s) { s.textContent = isYen() ? '円' : '万円'; });
+    Array.prototype.forEach.call(document.querySelectorAll('.mu-y'), function (s) { s.textContent = isYen() ? '円/年' : '万円/年'; });
+    $('unit-man').setAttribute('aria-pressed', String(!isYen()));
+    $('unit-yen').setAttribute('aria-pressed', String(isYen()));
+    $('taxRate').value = S.oneTimeTaxRate;
+  }
+  function syncKeyButtons() {
+    var k = effKey();
+    ['age', 'elapsed', 'year'].forEach(function (x) { $('key-' + x).setAttribute('aria-pressed', String(x === k)); });
+    $('key-elapsed').disabled = !P().contractYear;
+    $('key-elapsed').title = P().contractYear ? '' : '「契約した年」を入れると使えます';
+    $('rowKeyHead').textContent = KEY_LABEL[k];
+    $('rowValHead').textContent = '解約返戻金（' + (isYen() ? '円' : '万円') + '）';
+  }
   function buildRows() {
+    syncKeyButtons();
     var box = $('rows'); box.textContent = '';
-    S.policy.table.forEach(function (r, i) {
+    var p = P(), k = effKey();
+    if (!p.table.length) box.appendChild(el('p', 'hint', 'まだ行がありません。「行を追加」か「まとめて貼り付ける」から入れてください。'));
+    p.table.forEach(function (r, i) {
       var row = el('div', 'row-edit');
-      var age = document.createElement('input'); age.type = 'number'; age.step = '1'; age.value = r[0]; age.id = 'row' + i + '-age';
-      age.setAttribute('aria-label', (i + 1) + '行目の年齢');
-      var val = document.createElement('input'); val.type = 'number'; val.step = '0.01'; val.value = r[1]; val.id = 'row' + i + '-val';
-      val.setAttribute('aria-label', (i + 1) + '行目の解約返戻金（万円）');
+      var keyIn = document.createElement('input'); keyIn.type = 'number'; keyIn.step = '1'; keyIn.value = keyOfYear(r[0]); keyIn.id = 'row' + i + '-key';
+      keyIn.setAttribute('aria-label', (i + 1) + '行目の' + KEY_LABEL[k]);
+      var val = document.createElement('input'); val.type = 'number'; val.step = isYen() ? '1' : '0.01'; val.value = toUnit(r[1]); val.id = 'row' + i + '-val';
+      val.setAttribute('aria-label', (i + 1) + '行目の解約返戻金');
       var del = el('button', 'btn btn-icon', '×'); del.type = 'button'; del.setAttribute('aria-label', (i + 1) + '行目を削除');
-      row.appendChild(age); row.appendChild(val); row.appendChild(del);
+      row.appendChild(keyIn); row.appendChild(val); row.appendChild(del);
       box.appendChild(row);
-      age.addEventListener('input', function () { var n = num(age.value); if (n != null) { r[0] = n; update(); } });
-      val.addEventListener('input', function () { var n = num(val.value); if (n != null) { r[1] = n; update(); } });
-      del.addEventListener('click', function () {
-        if (S.policy.table.length <= 1) return;
-        S.policy.table.splice(i, 1); buildRows(); update();
-      });
+      keyIn.addEventListener('input', function () { var n = num(keyIn.value); if (n != null) { r[0] = yearOfKey(Math.round(n)); p.edited = true; update(); } });
+      val.addEventListener('input', function () { var n = num(val.value); if (n != null && n >= 0) { r[1] = fromUnit(n); p.edited = true; update(); } });
+      del.addEventListener('click', function () { p.table.splice(i, 1); p.edited = true; buildRows(); update(); });
     });
   }
 
-  function fillFields() {
+  /* ---------- まとめて貼り付け ---------- */
+  var parsed = null;
+  var ROLE_LABEL = { skip: '使わない', age: '年齢', elapsed: '経過年数', year: '西暦', man: '解約返戻金（万円）', yen: '解約返戻金（円）' };
+  function normalizeText(t) {
+    return String(t)
+      .replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); })
+      .replace(/，/g, ',').replace(/．/g, '.').replace(/％/g, '%').replace(/　/g, ' ')
+      .replace(/(\d),\s+(?=\d{3}(?![\d.]))/g, '$1,')
+      .replace(/(\d)\.\s+(?=\d)/g, '$1.');
+  }
+  function guessRole(col) {
+    var u = col[0].u, vals = col.map(function (t) { return t.v; });
+    var allInt = vals.every(function (v) { return Math.abs(v - Math.round(v)) < 1e-9; });
+    if (u === '歳' || u === '才') return 'age';
+    if (u === '年') return vals.every(function (v) { return v >= 1900; }) ? 'year' : 'elapsed';
+    if (u === '%') return 'skip';
+    if (u === '万円') return 'man';
+    if (u === '円') return 'yen';
+    if (allInt && vals.every(function (v) { return v >= 1900 && v <= 2200; })) return 'year';
+    var inc = vals.every(function (v, i) { return i === 0 || v > vals[i - 1]; });
+    if (allInt && inc && Math.max.apply(null, vals) <= 120) return Math.min.apply(null, vals) >= 15 ? 'age' : 'elapsed';
+    return Math.max.apply(null, vals) >= 10000 ? 'yen' : 'man';
+  }
+  function parsePaste(text) {
+    var rows = [];
+    normalizeText(text).split(/\r?\n/).forEach(function (line) {
+      var re = /(\d[\d,]*(?:\.\d+)?)\s*(万円|円|歳|才|年|%)?/g, m, toks = [];
+      while ((m = re.exec(line))) toks.push({ v: parseFloat(m[1].replace(/,/g, '')), u: m[2] || '' });
+      if (toks.length >= 2) rows.push(toks);
+    });
+    if (!rows.length) return { error: '数字が2つ以上ある行が見つかりませんでした。表の部分をコピーして貼り付けてください。' };
+    var counts = {};
+    rows.forEach(function (r) { counts[r.length] = (counts[r.length] || 0) + 1; });
+    var n = +Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a] || b - a; })[0];
+    rows = rows.filter(function (r) { return r.length === n; });
+    var roles = [];
+    for (var c = 0; c < n; c++) roles.push(guessRole(rows.map(function (r) { return r[c]; })));
+    /* 時期の列は1つ（年齢 → 西暦 → 経過年数の順に優先）、金額の列は最後の1つ */
+    var keyIdx = -1;
+    ['age', 'year', 'elapsed'].some(function (k) { keyIdx = roles.indexOf(k); return keyIdx >= 0; });
+    var valIdx = -1;
+    roles.forEach(function (r, i) { if (r === 'man' || r === 'yen') valIdx = i; });
+    roles = roles.map(function (r, i) {
+      if ((r === 'age' || r === 'year' || r === 'elapsed') && i !== keyIdx) return 'skip';
+      if ((r === 'man' || r === 'yen') && i !== valIdx) return 'skip';
+      return r;
+    });
+    return { rows: rows, roles: roles };
+  }
+  function showMsg(text, ok) {
+    var m = $('importMsg');
+    if (!m) return;
+    m.textContent = text;
+    m.className = 'msg ' + (ok ? 'ok' : 'err');
+  }
+  function renderPreview() {
+    var box = $('preview'); box.textContent = '';
+    if (!parsed) return;
+    if (parsed.error) { var e = el('p', 'msg err', parsed.error); e.id = 'importMsg'; box.appendChild(e); return; }
+    box.appendChild(el('p', 'hint', parsed.rows.length + '行を読み取りました。各列が何を表すか確認して、違っていれば選び直してください。'));
+    var wrap = el('div', 'table-wrap'), t = el('table'), thead = el('thead'), tr = el('tr');
+    parsed.roles.forEach(function (role, c) {
+      var th = el('th'), sel = document.createElement('select');
+      sel.id = 'imp-col' + c; sel.setAttribute('aria-label', (c + 1) + '列目の内容');
+      Object.keys(ROLE_LABEL).forEach(function (r) { var op = el('option', null, ROLE_LABEL[r]); op.value = r; if (r === role) op.selected = true; sel.appendChild(op); });
+      sel.addEventListener('change', function () { parsed.roles[c] = sel.value; });
+      th.appendChild(sel); tr.appendChild(th);
+    });
+    thead.appendChild(tr); t.appendChild(thead);
+    var tb = el('tbody');
+    parsed.rows.slice(0, 5).forEach(function (r) {
+      var row = el('tr');
+      r.forEach(function (tok) { row.appendChild(el('td', null, tok.v.toLocaleString('ja-JP') + tok.u)); });
+      tb.appendChild(row);
+    });
+    if (parsed.rows.length > 5) { var more = el('tr'); var td = el('td', null, '…ほか' + (parsed.rows.length - 5) + '行'); td.colSpan = parsed.roles.length; more.appendChild(td); tb.appendChild(more); }
+    t.appendChild(tb); wrap.appendChild(t); box.appendChild(wrap);
+    var msg = el('p', 'msg'); msg.id = 'importMsg'; box.appendChild(msg);
+    var b = el('button', 'btn', 'この内容で表を置き換える'); b.type = 'button'; b.id = 'applyImport';
+    b.addEventListener('click', applyImport);
+    box.appendChild(b);
+  }
+  function applyImport() {
+    if (!parsed || parsed.error) return;
+    var p = P(), roles = parsed.roles;
+    var ki = -1, vi = -1;
+    roles.forEach(function (r, i) {
+      if (ki < 0 && (r === 'age' || r === 'year' || r === 'elapsed')) ki = i;
+      if (vi < 0 && (r === 'man' || r === 'yen')) vi = i;
+    });
+    if (ki < 0) { showMsg('「年齢」「西暦」「経過年数」のどれかの列を選んでください。', false); return; }
+    if (vi < 0) { showMsg('「解約返戻金」の列を選んでください。', false); return; }
+    var kr = roles[ki], vr = roles[vi];
+    if (kr === 'elapsed' && !p.contractYear) { showMsg('経過年数で読み取るには、上の「契約した年」を先に入れてください。', false); return; }
+    var byYear = {};
+    parsed.rows.forEach(function (r) {
+      var k = r[ki].v, v = r[vi].v;
+      var y = kr === 'year' ? k : kr === 'elapsed' ? p.contractYear + k : p.currentYear + (k - p.currentAge);
+      var man = vr === 'yen' ? v / 10000 : v;
+      if (isFinite(y) && isFinite(man) && man > 0) byYear[Math.round(y)] = man;
+    });
+    var table = Object.keys(byYear).map(function (y) { return [+y, byYear[y]]; }).sort(function (a, b) { return a[0] - b[0]; });
+    if (!table.length) { showMsg('表に入れられる行がありませんでした。列の選び方を確認してください。', false); return; }
+    p.table = table; p.edited = true;
+    S.ui.key = kr; S.ui.unit = vr === 'yen' ? 'yen' : 'man';
+    fillPolicyFields(); buildRows(); update();
+    var future = table.filter(function (r) { return r[0] > p.currentYear; }).length;
+    showMsg(table.length + '行を表に入れました（今より後の年は' + future + '行）。', true);
+  }
+
+  /* ---------- 入力のつなぎこみ ---------- */
+  function fillGlobalFields() {
     $('mode-lump').checked = S.mode === 'lump';
     $('mode-monthly').checked = S.mode === 'monthly';
     $('months').value = S.months;
     $('waitRate').value = S.waitRate;
-    $('taxRate').value = S.oneTimeTaxRate;
-    $('p-age').value = S.policy.currentAge;
-    $('p-year').value = S.policy.currentYear;
-    $('p-surr').value = S.policy.surrenderNow;
-    $('p-div').value = S.policy.dividend;
-    $('p-prem').value = S.policy.premiums;
-    $('p-death').value = S.policy.deathBenefit == null ? '' : S.policy.deathBenefit;
     $('showBand').checked = S.showBand;
     syncMode();
   }
@@ -1154,8 +1522,8 @@ label.f.full { grid-column: 1 / -1; }
       if (n != null && (!ok || ok(n))) { setter(n); update(); }
     });
   }
-
   function bindStatic() {
+    bindPolicyBar();
     $('horizon').addEventListener('input', function () { S.horizonAge = +this.value; update(); });
     ['mode-lump', 'mode-monthly'].forEach(function (id) {
       $(id).addEventListener('change', function () { if (this.checked) { S.mode = this.value; syncMode(); update(); } });
@@ -1163,35 +1531,77 @@ label.f.full { grid-column: 1 / -1; }
     bindNumber('months', function (n) { S.months = Math.round(n); }, function (n) { return n >= 2 && n <= 240; });
     bindNumber('waitRate', function (n) { S.waitRate = n; }, function (n) { return n >= 0 && n <= 10; });
     bindNumber('taxRate', function (n) { S.oneTimeTaxRate = n; }, function (n) { return n >= 0 && n <= 55; });
-    bindNumber('p-age', function (n) { S.policy.currentAge = Math.round(n); }, function (n) { return n > 0 && n < 120; });
-    bindNumber('p-year', function (n) { S.policy.currentYear = Math.round(n); }, function (n) { return n > 1900 && n < 2200; });
-    bindNumber('p-surr', function (n) { S.policy.surrenderNow = n; }, function (n) { return n > 0; });
-    bindNumber('p-div', function (n) { S.policy.dividend = n; }, function (n) { return n >= 0; });
-    bindNumber('p-prem', function (n) { S.policy.premiums = n; }, function (n) { return n > 0; });
-    $('p-death').addEventListener('input', function () {
-      var v = this.value.trim();
-      if (v === '') { S.policy.deathBenefit = null; update(); return; }
-      var n = num(v);
-      if (n != null && n >= 0) { S.policy.deathBenefit = n; update(); }
+    $('p-name').addEventListener('input', function () {
+      P().name = this.value.trim() || '名前なしの保険'; P().edited = true;
+      renderPolicyBar(); update();
+    });
+    POLICY_FIELDS.forEach(function (f) {
+      $(f[0]).addEventListener('input', function () {
+        var p = P(), raw = this.value.trim();
+        if (raw === '') { if (f[3]) { p[f[1]] = null; p.edited = true; afterPolicyChange(f[1]); } return; }
+        var n = num(raw);
+        if (n == null) return;
+        if (f[2] === 'money') n = fromUnit(n);
+        if (f[2] === 'int') n = Math.round(n);
+        if (!f[4](f[2] === 'money' && isYen() ? n : n)) return;
+        p[f[1]] = n; p.edited = true;
+        afterPolicyChange(f[1]);
+      });
+    });
+    ['man', 'yen'].forEach(function (u) {
+      $('unit-' + u).addEventListener('click', function () { S.ui.unit = u; fillPolicyFields(); buildRows(); save(); });
+    });
+    ['age', 'elapsed', 'year'].forEach(function (k) {
+      $('key-' + k).addEventListener('click', function () { S.ui.key = k; buildRows(); save(); });
     });
     $('showBand').addEventListener('change', function () { S.showBand = this.checked; update(); });
     $('view-surrender').addEventListener('click', function () { S.chartView = 'surrender'; update(); });
     $('view-death').addEventListener('click', function () { if (hasDeath()) { S.chartView = 'death'; update(); } });
     $('addRow').addEventListener('click', function () {
-      var t = S.policy.table, last = t.length ? t[t.length - 1] : [S.policy.currentAge, S.policy.surrenderNow];
-      t.push([last[0] + 1, last[1]]);
+      var p = P(), t = p.table, last = t.length ? t[t.length - 1] : [p.currentYear, p.surrenderNow || 0];
+      t.push([last[0] + 1, last[1]]); p.edited = true;
       buildRows(); update();
       var rows = $('rows'); rows.scrollTop = rows.scrollHeight;
     });
     $('reset').addEventListener('click', function () {
-      S = fresh(); buildAlts(); buildRows(); fillFields(); update();
+      var d = DEFAULT_POLICIES.filter(function (x) { return x.id === P().id; })[0];
+      if (!d) return;
+      var np = normalizePolicy(clone(d)); np.edited = false;
+      S.policies[S.current] = np;
+      fillPolicyFields(); buildRows(); renderPolicyBar(); update();
     });
+    $('resetAlts').addEventListener('click', function () {
+      S.alts = clone(DEFAULT_ALTS);
+      ['mode', 'months', 'waitRate'].forEach(function (k) { S[k] = DEFAULTS[k]; });
+      buildAlts(); fillGlobalFields(); update();
+    });
+    $('parseBtn').addEventListener('click', function () { parsed = parsePaste($('pasteText').value); renderPreview(); });
+  }
+  function afterPolicyChange(key) {
+    if (key === 'currentAge' || key === 'currentYear' || key === 'contractYear') buildRows();
+    update();
   }
 
   /* ---------- 全体の更新 ---------- */
   function update() {
-    clampHorizon();
     save();
+    var p = P();
+    $('policyLabel').textContent = '「' + p.name + '」の数字で計算しています。' + (p.note ? p.note : '');
+    var ok = ready();
+    $('results').hidden = !ok;
+    $('results').style.display = ok ? 'contents' : 'none';
+    $('tableCard').hidden = !ok;
+    $('emptyState').hidden = ok;
+    if (!ok) {
+      var miss = [];
+      if (!(p.surrenderNow > 0)) miss.push('今の解約返戻金');
+      if (!(p.premiums > 0)) miss.push('これまでに払った保険料の合計');
+      if (points().length < 2) miss.push('今後の解約返戻金の表（今より後の年を1行以上）');
+      $('emptyText').textContent = '「' + p.name + '」は、まだ次の数字が入っていません：' + miss.join('、') + '。下の「保険のデータ」に入れると、比較が表示されます。';
+      chartState = null;
+      return;
+    }
+    clampHorizon();
     renderNow();
     renderVerdict();
     renderChart();
@@ -1200,8 +1610,10 @@ label.f.full { grid-column: 1 / -1; }
 
   bindStatic();
   buildAlts();
+  renderPolicyBar();
+  fillPolicyFields();
+  fillGlobalFields();
   buildRows();
-  fillFields();
   update();
 
   var pending = false, lastW = 0;
