@@ -149,7 +149,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 28px; ma
 .chart-box svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart-box text { font-family: var(--f-body); }
 .tip {
-  position: absolute; pointer-events: none; z-index: 2;
+  position: absolute; pointer-events: none; z-index: 2; max-width: min(340px, 92%);
   background: var(--surface); color: var(--ink); border: 1px solid var(--ring); border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12); padding: 8px 10px; font-size: 0.8rem; min-width: 150px;
 }
@@ -166,7 +166,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 28px; ma
 .alt-on { display: flex; align-items: center; gap: 8px; }
 .alt-on input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
 .alt-fields { display: grid; grid-template-columns: 1fr; gap: 8px; min-width: 0; grid-column: 1 / -1; }
-@media (min-width: 560px) { .alt-fields { grid-template-columns: 1fr 7.5em 1fr; } }
+@media (min-width: 560px) { .alt-fields { grid-template-columns: 1fr 7.5em 7.5em; } .alt-fields .span-all { grid-column: 1 / -1; } }
 .alt.is-off .alt-fields { opacity: 0.5; }
 label.f { display: grid; gap: 3px; font-size: 0.8rem; color: var(--ink-2); min-width: 0; }
 .unit { display: flex; align-items: center; gap: 6px; }
@@ -206,6 +206,33 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
 .notes a { color: var(--accent); }
 .tag { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 0 6px; border-radius: 4px; background: var(--note-wash); color: var(--ink); margin-right: 4px; }
 
+/* 万一のとき・値動きの幅 */
+.opt-range { font-size: 0.78rem; color: var(--ink-2); }
+.opt-val .mid { font-size: 0.72rem; color: var(--muted); }
+.chart-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; font-size: 0.84rem; padding: 4px 14px; background: transparent; color: var(--ink-2); border: 0; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--axis); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.seg button:disabled { opacity: 0.45; cursor: not-allowed; }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 0.84rem; color: var(--ink-2); cursor: pointer; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+.band-key { flex: none; width: 14px; height: 10px; border-radius: 2px; background: var(--muted); opacity: 0.3; }
+.death { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.death-list { display: grid; gap: 6px; }
+.death-row { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto 6.5em; gap: 4px 10px; align-items: baseline; font-size: 0.9rem; }
+.death-row .key { align-self: center; }
+.death-row b { font-variant-numeric: tabular-nums; text-align: right; }
+.death-row small { display: block; font-size: 0.75rem; color: var(--muted); }
+.diff { font-size: 0.8rem; text-align: right; font-variant-numeric: tabular-nums; }
+.diff.good { color: var(--good); }
+.diff.bad { color: var(--bad); }
+.death-note { font-size: 0.88rem; color: var(--ink-2); }
+.death-note strong { color: var(--ink); }
+.empty { display: grid; gap: 10px; justify-items: start; border: 1px dashed var(--axis); border-radius: 8px; padding: 12px 14px; font-size: 0.88rem; color: var(--ink-2); }
+td small { display: block; font-size: 0.72rem; color: var(--muted); font-weight: 400; }
+label.f.full { grid-column: 1 / -1; }
+
 @media (prefers-reduced-motion: no-preference) {
   .opt, .pill { transition: background-color 0.2s ease; }
 }
@@ -234,13 +261,20 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
     <p class="headline" id="headline"></p>
     <div class="opts" id="opts"></div>
     <p class="breakeven" id="breakeven"></p>
-    <p class="caution"><span aria-hidden="true">⚠</span><span>解約すると、万一のときの死亡保障もなくなります。保障額は保険証券で確認し、保障がまだ必要かも一緒に考えてください。</span></p>
+    <div class="death" id="death"></div>
   </section>
 
   <section class="card" aria-labelledby="chartTitle">
     <div class="card-head">
-      <h2 id="chartTitle">受け取れる額の推移</h2>
+      <h2 id="chartTitle">解約したときに受け取れる額</h2>
       <span class="hint">税金を引いた後・単位は万円。グラフに触れると各年の金額が出ます</span>
+    </div>
+    <div class="chart-controls">
+      <div class="seg" role="group" aria-label="グラフの切り替え">
+        <button type="button" id="view-surrender" aria-pressed="true">解約したとき</button>
+        <button type="button" id="view-death" aria-pressed="false">万一のとき</button>
+      </div>
+      <label class="check" for="showBand"><input type="checkbox" id="showBand"> 値動きの幅を表示</label>
     </div>
     <div class="legend" id="legend"></div>
     <div class="chart-box" id="chart" tabindex="0" aria-label="受け取れる額の推移グラフ。左右キーで年齢を移動できます"></div>
@@ -282,6 +316,7 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
         <label class="f" for="p-div">配当金等<span class="unit"><input type="number" id="p-div" step="0.01"><span>万円</span></span></label>
         <label class="f" for="p-prem">払い込んだ保険料の合計<span class="unit"><input type="number" id="p-prem" step="0.01"><span>万円</span></span></label>
         <label class="f" for="taxRate">あなたの所得税＋住民税の税率<span class="unit"><input type="number" id="taxRate" min="0" max="55" step="1"><span>%</span></span></label>
+        <label class="f full" for="p-death">死亡保険金額（保険証券に記載。空欄なら万一のときの比較はしません）<span class="unit"><input type="number" id="p-death" min="0" step="1" placeholder="例：300"><span>万円</span></span></label>
       </div>
       <div class="sub-block">
         <h3>今後の解約返戻金（試算書の表）</h3>
@@ -298,7 +333,7 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
   <section class="card" aria-labelledby="tableTitle">
     <div class="card-head">
       <h2 id="tableTitle">年齢ごとの比較表</h2>
-      <span class="hint">税金を引いた後・万円。▲は保険より多い</span>
+      <span class="hint">税金を引いた後・万円。▲は保険より多い。小さい数字は値動きの幅</span>
     </div>
     <div class="table-wrap"><table id="table"></table></div>
   </section>
@@ -312,8 +347,11 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
       <li>預金・国債の利息には20.315%の税金がかかる前提です。NISAは非課税、特定口座は売るときにもうけに20.315%かかる前提です。</li>
       <li><span class="tag">仮</span>定期預金0.5%は、2026年のメガバンクの水準をもとにした仮の数字です。ネット銀行では1%を超える例もあります。</li>
       <li><span class="tag">仮</span>個人向け国債（変動10年）1.85%は、2026年11月募集分の最初の利率です。半年ごとに見直されるため、将来の利率はわかりません（<a href="https://www.mof.go.jp/jgbs/individual/kojinmuke/main/issue/hendou10/" target="_blank" rel="noopener">財務省</a>）。</li>
-      <li><span class="tag">仮</span>NISAの年4%は、投資信託の期待値の仮置きです。元本は保証されず、年によっては大きく減ることもあります。</li>
-      <li>利回りは毎年同じとして計算しています。試算書の時期（契約応当日）と今の数か月のずれは無視しています。</li>
+      <li><span class="tag">仮</span>NISAの年4%は、投資信託の「ならした平均」の仮置きです。元本は保証されず、年によっては大きく減ることもあります。</li>
+      <li><span class="tag">仮</span>NISAの「1年のぶれ幅15%」は、全世界株式の過去の値動きをもとにした仮の数字です。うすい帯と「値動きの幅」は、10回のうち8回はこの範囲に入る幅です（上と下に1回ずつは外れます）。</li>
+      <li>値動きの幅と「保険を下回る確率」は、統計でよく使う考え方（対数正規分布）での概算です。実際の相場はこの通りには動きません。</li>
+      <li>死亡保険金は金額が一定で、契約者と被保険者があなた、受取人がご家族という前提です（解約返戻金の方が多い年はその額）。死亡保険金には相続税の非課税枠（500万円×法定相続人の数）がありますが、この比較では相続税は考えていません。</li>
+      <li>預金・国債の利回りは毎年同じとして計算しています。試算書の時期（契約応当日）と今の数か月のずれは無視しています。</li>
     </ul>
   </section>
 </main>
@@ -323,7 +361,7 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
   'use strict';
 
   var TAX = 0.20315;
-  var KEY = 'hoken-norikae-v1';
+  var KEY = 'hoken-norikae-v2';
 
   /* POLICY_DATA_START */
   var DEFAULT_POLICY = {
@@ -333,19 +371,21 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
     surrenderNow: 206.0,
     dividend: 2.0,
     premiums: 200.0,
+    deathBenefit: 300,
     table: [[51, 207.85], [52, 209.72], [53, 211.61], [54, 213.51], [55, 215.43], [56, 217.37], [57, 219.33], [58, 221.30], [59, 223.30], [60, 225.31], [65, 235.61], [70, 246.38], [75, 257.65], [80, 269.43], [85, 281.75], [90, 294.63]]
   };
   /* POLICY_DATA_END */
 
   var DEFAULT_ALTS = [
-    { name: '定期預金', rate: 0.5, tax: 'interest', on: true },
-    { name: '個人向け国債（変動10年）', rate: 1.85, tax: 'interest', on: true },
-    { name: 'NISA（投資信託）', rate: 4.0, tax: 'free', on: true }
+    { name: '定期預金', rate: 0.5, vol: 0, tax: 'interest', on: true },
+    { name: '個人向け国債（変動10年）', rate: 1.85, vol: 0, tax: 'interest', on: true },
+    { name: 'NISA（投資信託）', rate: 4.0, vol: 15, tax: 'free', on: true }
   ];
-  var DEFAULTS = { horizonAge: 65, mode: 'lump', months: 24, waitRate: 0.4, oneTimeTaxRate: 20 };
+  var DEFAULTS = { horizonAge: 65, mode: 'lump', months: 24, waitRate: 0.4, oneTimeTaxRate: 20, chartView: 'surrender', showBand: true };
   var COLORS = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)'];
   var TAX_LABEL = { interest: '利息に課税', free: '非課税', onsale: '売却時に課税' };
   var SVGNS = 'http://www.w3.org/2000/svg';
+  var Z = 1.2815516; /* 10回中8回の幅（上下10%点） */
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function sig() { return DEFAULT_POLICY.label + '|' + DEFAULT_POLICY.premiums + '|' + DEFAULT_POLICY.surrenderNow; }
@@ -422,19 +462,31 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
   }
   function payoutAt(age) { var v = surrenderAt(age); return v == null ? null : v + S.policy.dividend; }
   function insNet(age) { var pay = payoutAt(age); return pay == null ? null : pay - oneTimeTax(pay); }
+  function hasDeath() { return S.policy.deathBenefit != null && S.policy.deathBenefit > 0; }
+  /* 万一のとき：死亡保険金（解約返戻金の方が多ければその額）＋たまっている配当金 */
+  function insDeath(age) {
+    if (!hasDeath()) return null;
+    var v = surrenderAt(age);
+    return v == null ? null : Math.max(S.policy.deathBenefit, v) + S.policy.dividend;
+  }
+  /* 保障の上乗せ：死亡保険金 − その時の解約返戻金 */
+  function extraCover(age) {
+    var v = surrenderAt(age);
+    return hasDeath() && v != null ? Math.max(0, S.policy.deathBenefit - v) : null;
+  }
   function startAmount() { return insNet(S.policy.currentAge); }
   function yearsTo(age) { return age - S.policy.currentAge; }
   function yearOf(age) { return S.policy.currentYear + yearsTo(age); }
 
   /* ---------- 乗り換え先の計算（月ごとに複利で積み上げる） ---------- */
-  function altNet(alt, yrs) {
+  function altNet(alt, yrs, z) {
     var A = startAmount();
     var r = alt.rate / 100;
     var annual = alt.tax === 'interest' ? r * (1 - TAX) : r;
     var rm = Math.pow(1 + annual, 1 / 12) - 1;
     var wm = Math.pow(1 + (S.waitRate / 100) * (1 - TAX), 1 / 12) - 1;
     var N = S.mode === 'monthly' ? Math.max(1, Math.round(S.months)) : 1;
-    var total = Math.round(yrs * 12);
+    var total = Math.max(0, Math.round(yrs * 12));
     var cash = A, inv = 0, basis = 0;
     if (N === 1) { inv = A; basis = A; cash = 0; }
     for (var m = 0; m < total; m++) {
@@ -442,10 +494,38 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
       cash *= 1 + wm;
       inv *= 1 + rm;
     }
+    /* 値動き：z は「平均から何段ずれたか」。投資していた平均の年数でぶれ幅を広げる */
+    var vol = (alt.vol || 0) / 100;
+    if (z && vol > 0 && inv > 0 && total > 0) {
+      var K = N === 1 ? 1 : Math.min(N, total);
+      var teff = (total - (K - 1) / 2) / 12;
+      inv *= Math.exp(z * vol * Math.sqrt(teff));
+    }
     var val = Math.max(0, cash) + inv;
     if (alt.tax === 'onsale') val -= Math.max(0, inv - basis) * TAX;
     return val;
   }
+  function hasVol(alt) { return (alt.vol || 0) > 0; }
+  function altRange(alt, yrs) { return { lo: altNet(alt, yrs, -Z), hi: altNet(alt, yrs, Z) }; }
+  function normCdf(x) {
+    var t = 1 / (1 + 0.2316419 * Math.abs(x));
+    var d = 0.3989423 * Math.exp(-x * x / 2);
+    var p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return x > 0 ? 1 - p : p;
+  }
+  /* 乗り換え先が target を下回る確率 */
+  function probBelow(alt, yrs, target) {
+    if (!hasVol(alt) || yrs <= 0) return altNet(alt, yrs, 0) < target ? 1 : 0;
+    var lo = -8, hi = 8;
+    if (altNet(alt, yrs, lo) >= target) return 0;
+    if (altNet(alt, yrs, hi) < target) return 1;
+    for (var i = 0; i < 50; i++) {
+      var mid = (lo + hi) / 2;
+      if (altNet(alt, yrs, mid) < target) lo = mid; else hi = mid;
+    }
+    return normCdf((lo + hi) / 2);
+  }
+  function pctInt(p) { var v = Math.round(p * 100); return v < 1 && p > 0 ? '1%未満' : v > 99 && p < 1 ? '99%超' : v + '%'; }
   /* 保険を続けた場合と同じになる「乗り換え先の利回り」 */
   function breakeven(tax, age) {
     var target = insNet(age), yrs = yearsTo(age);
@@ -524,6 +604,9 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
       var s = el('strong', null, '「' + best.x.alt.name + '」に乗り換える');
       h.appendChild(s);
       h.appendChild(document.createTextNode('ほうが、保険を続けるより ' + f1(best.v - base) + '万円 多くなる見込みです。'));
+      if (hasVol(best.x.alt)) {
+        h.appendChild(document.createTextNode('ただし値動きがあるため、約' + pctInt(probBelow(best.x.alt, yrs, base)) + 'の確率で保険を下回ります。'));
+      }
     } else {
       h.appendChild(el('strong', null, '保険を続ける'));
       h.appendChild(document.createTextNode('ほうが多く受け取れる見込みです。'));
@@ -546,8 +629,15 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
       var key = el('span', 'key'); key.style.background = COLORS[o.x.i + 1];
       head.appendChild(key); head.appendChild(el('span', null, a.name));
       card.appendChild(head);
-      var val = el('div', 'opt-val', f1(o.v)); val.appendChild(el('small', null, '万円')); card.appendChild(val);
-      card.appendChild(el('div', 'opt-sub', '年' + pct(a.rate) + '・' + TAX_LABEL[a.tax]));
+      var val = el('div', 'opt-val', f1(o.v)); val.appendChild(el('small', null, '万円'));
+      if (hasVol(a)) val.appendChild(el('span', 'mid', ' 真ん中の予想'));
+      card.appendChild(val);
+      card.appendChild(el('div', 'opt-sub', '年' + pct(a.rate) + '・' + TAX_LABEL[a.tax] + (hasVol(a) ? '・ぶれ幅' + a.vol + '%' : '')));
+      if (hasVol(a)) {
+        var rg = altRange(a, yrs);
+        card.appendChild(el('div', 'opt-range', '値動きの幅：' + f1(rg.lo) + '〜' + f1(rg.hi) + '万円'));
+        card.appendChild(el('div', 'opt-range', '保険を下回る確率：約' + pctInt(probBelow(a, yrs, base))));
+      }
       var pill = el('span', 'pill ' + (d >= 0 ? 'good' : 'bad'), (d >= 0 ? '▲ 保険より ' : '▼ 保険より ') + signed(d));
       card.appendChild(pill);
       box.appendChild(card);
@@ -562,6 +652,43 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
     be.appendChild(document.createTextNode('、非課税のNISAなら '));
     be.appendChild(el('strong', null, '年' + pct(bf) + '以上'));
     be.appendChild(document.createTextNode(' の利回りが必要です' + (S.mode === 'monthly' ? '（' + S.months + 'か月に分けて移す前提）。' : '。')));
+    renderDeath(age, yrs, list);
+  }
+
+  /* ---------- 万一のとき ---------- */
+  function renderDeath(age, yrs, list) {
+    var box = $('death'); box.textContent = '';
+    box.appendChild(el('h3', null, '万一のとき：' + age + '歳で亡くなった場合に家族が受け取る額'));
+    if (!hasDeath()) {
+      var e = el('div', 'empty');
+      e.appendChild(el('span', null, '解約すると死亡保障はなくなります。保険証券の「死亡保険金額」を下の「保険のデータ」に入れると、ここで比べられます。'));
+      var b = el('button', 'btn', '死亡保険金額を入力する'); b.type = 'button';
+      b.addEventListener('click', function () { var f = $('p-death'); f.scrollIntoView({ block: 'center' }); f.focus(); });
+      e.appendChild(b);
+      box.appendChild(e);
+      return;
+    }
+    var baseD = insDeath(age);
+    var wrap = el('div', 'death-list');
+    function row(color, name, sub, v, d) {
+      var r = el('div', 'death-row');
+      var k = el('span', 'key'); k.style.background = color; r.appendChild(k);
+      var n = el('span', null, name); if (sub) n.appendChild(el('small', null, sub)); r.appendChild(n);
+      r.appendChild(el('b', null, f1(v) + '万円'));
+      r.appendChild(d == null ? el('span', 'diff', '基準') : el('span', 'diff ' + (d >= 0 ? 'good' : 'bad'), (d >= 0 ? '▲ ' : '▼ ') + signed(d)));
+      wrap.appendChild(r);
+    }
+    row(COLORS[0], '保険を続ける', '死亡保険金＋配当金', baseD, null);
+    list.forEach(function (o) {
+      var a = o.x.alt;
+      row(COLORS[o.x.i + 1], a.name, hasVol(a) ? '悪いときは ' + f1(altRange(a, yrs).lo) + '万円' : null, o.v, o.v - baseD);
+    });
+    box.appendChild(wrap);
+    var p = el('p', 'death-note');
+    p.appendChild(document.createTextNode('解約すると、' + age + '歳の時点で '));
+    p.appendChild(el('strong', null, f1(extraCover(age)) + '万円'));
+    p.appendChild(document.createTextNode(' 分の保障（死亡保険金 − その時の解約返戻金）を手放すことになります。この差は年齢が上がるほど小さくなります。'));
+    box.appendChild(p);
   }
 
   /* ---------- グラフ ---------- */
@@ -578,11 +705,17 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
   function buildSeries(a0, a1) {
     var ages = [];
     for (var a = a0; a <= a1; a++) ages.push(a);
-    var series = [{ name: '保険を続ける', color: COLORS[0], vals: ages.map(insNet) }];
+    var death = S.chartView === 'death' && hasDeath();
+    var series = [{ name: death ? '保険を続ける（死亡保険金）' : '保険を続ける', color: COLORS[0], vals: ages.map(death ? insDeath : insNet) }];
     activeAlts().forEach(function (x) {
-      series.push({ name: x.alt.name, color: COLORS[x.i + 1], vals: ages.map(function (a) { return altNet(x.alt, yearsTo(a)); }) });
+      var s = { name: x.alt.name, color: COLORS[x.i + 1], vals: ages.map(function (a) { return altNet(x.alt, yearsTo(a)); }) };
+      if (S.showBand && hasVol(x.alt)) {
+        s.lo = ages.map(function (a) { return altNet(x.alt, yearsTo(a), -Z); });
+        s.hi = ages.map(function (a) { return altNet(x.alt, yearsTo(a), Z); });
+      }
+      series.push(s);
     });
-    return { ages: ages, series: series };
+    return { ages: ages, series: series, death: death };
   }
 
   function renderLegend(series) {
@@ -593,6 +726,12 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
       it.appendChild(k); it.appendChild(document.createTextNode(s.name));
       lg.appendChild(it);
     });
+    if (series.some(function (s) { return s.lo; })) {
+      var b = el('span');
+      b.appendChild(el('span', 'band-key'));
+      b.appendChild(document.createTextNode('うすい帯＝値動きの幅（10回中8回はこの中）'));
+      lg.appendChild(b);
+    }
   }
 
   function renderChart() {
@@ -606,9 +745,18 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
     if (a1 <= a0) a1 = a0 + 1;
     var d = buildSeries(a0, a1);
     renderLegend(d.series);
+    $('chartTitle').textContent = d.death ? '万一のときに家族が受け取る額' : '解約したときに受け取れる額';
+    $('view-surrender').setAttribute('aria-pressed', String(!d.death));
+    $('view-death').setAttribute('aria-pressed', String(d.death));
+    $('view-death').disabled = !hasDeath();
+    $('view-death').title = hasDeath() ? '' : '死亡保険金額を入れると使えます';
 
     var lo = Infinity, hi = -Infinity;
-    d.series.forEach(function (s) { s.vals.forEach(function (v) { if (v != null) { lo = Math.min(lo, v); hi = Math.max(hi, v); } }); });
+    d.series.forEach(function (s) {
+      [s.vals, s.lo || [], s.hi || []].forEach(function (arr) {
+        arr.forEach(function (v) { if (v != null) { lo = Math.min(lo, v); hi = Math.max(hi, v); } });
+      });
+    });
     var ticks = niceTicks(lo, hi, narrow ? 4 : 5);
     var y0 = ticks[0], y1 = ticks[ticks.length - 1];
     var pw = W - m.l - m.r, ph = H - m.t - m.b;
@@ -637,6 +785,14 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
       tx.textContent = a + '歳';
       root.appendChild(tx);
     }
+
+    // 値動きの幅（うすい帯）
+    d.series.forEach(function (s) {
+      if (!s.lo) return;
+      var top = s.hi.map(function (v, i) { return X(d.ages[i]).toFixed(1) + ' ' + Y(v).toFixed(1); });
+      var bot = s.lo.map(function (v, i) { return X(d.ages[i]).toFixed(1) + ' ' + Y(v).toFixed(1); }).reverse();
+      root.appendChild(svg('path', { d: 'M' + top.join('L') + 'L' + bot.join('L') + 'Z', fill: s.color, 'fill-opacity': 0.12, stroke: 'none' }));
+    });
 
     // 線
     d.series.forEach(function (s) {
@@ -696,7 +852,7 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
           var k = el('span', 'key'); k.style.background = o.s.color;
           row.appendChild(k);
           row.appendChild(el('b', null, f1(o.v) + '万円'));
-          row.appendChild(el('span', null, o.s.name));
+          row.appendChild(el('span', null, o.s.name + (o.s.lo ? '（幅 ' + Math.round(o.s.lo[idx]) + '〜' + Math.round(o.s.hi[idx]) + '）' : '')));
           tip.appendChild(row);
         });
       tip.hidden = false;
@@ -743,6 +899,7 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
     }
     tr.appendChild(th('保険を続ける', COLORS[0]));
     tr.appendChild(th('保険の利回り'));
+    if (hasDeath()) tr.appendChild(th('保障の上乗せ'));
     alts.forEach(function (x) { tr.appendChild(th(shortName(x.alt.name), COLORS[x.i + 1])); });
     thead.appendChild(tr); t.appendChild(thead);
 
@@ -757,10 +914,15 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
       row.appendChild(el('td', null, yearOf(a) + '年'));
       row.appendChild(el('td', null, f1(base)));
       row.appendChild(el('td', null, pct(insYield(a))));
+      if (hasDeath()) row.appendChild(el('td', null, f1(extraCover(a))));
       alts.forEach(function (x) {
         var v = altNet(x.alt, yearsTo(a));
         var td = el('td', null, f1(v));
         if (v > base) td.appendChild(el('span', 'up', '▲'));
+        if (hasVol(x.alt)) {
+          var rg = altRange(x.alt, yearsTo(a));
+          td.appendChild(el('small', null, Math.round(rg.lo) + '〜' + Math.round(rg.hi)));
+        }
         row.appendChild(td);
       });
       tb.appendChild(row);
@@ -795,7 +957,13 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
         var op = el('option', null, o[1]); op.value = o[0]; if (o[0] === alt.tax) op.selected = true; sel.appendChild(op);
       });
       lt.appendChild(sel);
-      fields.appendChild(ln); fields.appendChild(lr); fields.appendChild(lt);
+      var lv = el('label', 'f', '1年のぶれ幅'); lv.htmlFor = 'alt' + i + '-vol';
+      var unit2 = el('span', 'unit');
+      var vol = document.createElement('input'); vol.type = 'number'; vol.id = 'alt' + i + '-vol'; vol.step = '1'; vol.min = '0'; vol.max = '60'; vol.value = alt.vol || 0;
+      unit2.appendChild(vol); unit2.appendChild(el('span', null, '%'));
+      lv.appendChild(unit2);
+      lt.classList.add('span-all');
+      fields.appendChild(ln); fields.appendChild(lr); fields.appendChild(lv); fields.appendChild(lt);
       row.appendChild(fields);
       box.appendChild(row);
 
@@ -803,6 +971,7 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
       name.addEventListener('input', function () { alt.name = name.value.trim() || ('乗り換え先' + (i + 1)); update(); });
       rate.addEventListener('input', function () { var n = num(rate.value); if (n != null && n > -10 && n < 30) { alt.rate = n; update(); } });
       sel.addEventListener('change', function () { alt.tax = sel.value; update(); });
+      vol.addEventListener('input', function () { var n = num(vol.value); if (n != null && n >= 0 && n <= 60) { alt.vol = n; update(); } });
     });
   }
 
@@ -837,6 +1006,8 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
     $('p-surr').value = S.policy.surrenderNow;
     $('p-div').value = S.policy.dividend;
     $('p-prem').value = S.policy.premiums;
+    $('p-death').value = S.policy.deathBenefit == null ? '' : S.policy.deathBenefit;
+    $('showBand').checked = S.showBand;
     syncMode();
   }
   function syncMode() {
@@ -864,6 +1035,15 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
     bindNumber('p-surr', function (n) { S.policy.surrenderNow = n; }, function (n) { return n > 0; });
     bindNumber('p-div', function (n) { S.policy.dividend = n; }, function (n) { return n >= 0; });
     bindNumber('p-prem', function (n) { S.policy.premiums = n; }, function (n) { return n > 0; });
+    $('p-death').addEventListener('input', function () {
+      var v = this.value.trim();
+      if (v === '') { S.policy.deathBenefit = null; update(); return; }
+      var n = num(v);
+      if (n != null && n >= 0) { S.policy.deathBenefit = n; update(); }
+    });
+    $('showBand').addEventListener('change', function () { S.showBand = this.checked; update(); });
+    $('view-surrender').addEventListener('click', function () { S.chartView = 'surrender'; update(); });
+    $('view-death').addEventListener('click', function () { if (hasDeath()) { S.chartView = 'death'; update(); } });
     $('addRow').addEventListener('click', function () {
       var t = S.policy.table, last = t.length ? t[t.length - 1] : [S.policy.currentAge, S.policy.surrenderNow];
       t.push([last[0] + 1, last[1]]);
