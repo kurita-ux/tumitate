@@ -276,7 +276,17 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
 .msg.ok { color: var(--good); }
 .msg.err { color: var(--bad); }
 
-/* 比較試算書（A4・紙の見た目で固定。画面のテーマに関係なく白い紙） */
+/* データの保存と読み込み */
+.io-text { color: var(--ink-2); font-size: 0.9rem; max-width: 52em; }
+.io-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 16px; }
+.io-row label.f { min-width: min(100%, 18em); }
+.io-choice { display: grid; gap: 8px; }
+.io-choice:empty { display: none; }
+label.btn { display: inline-flex; align-items: center; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; padding: 0; margin: -1px; }
+.vh:focus-visible + label.btn { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* 比較レポート（A4・紙の見た目で固定。画面のテーマに関係なく白い紙） */
 .btn-primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .btn-primary:hover { background: var(--accent); filter: brightness(1.08); }
 .prop-preview { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
@@ -334,7 +344,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
   html, body { background: #ffffff !important; }
   :root { padding: 0 !important; }
   .wrap { padding: 0 !important; display: block; max-width: none; }
-  .wrap > *:not(#proposalCard), #results { display: none !important; }
+  .wrap > *:not(#proposalCard), #results, #ioCard { display: none !important; }
   #proposalCard { border: 0; padding: 0; background: #ffffff; display: block; }
   #proposalCard > *:not(.prop-preview) { display: none !important; }
   .prop-preview { border: 0; padding: 0; }
@@ -360,7 +370,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
       <button type="button" class="btn" id="pAdd">＋ 新しい保険</button>
       <button type="button" class="btn" id="pDup">複製</button>
       <button type="button" class="btn btn-danger" id="pDel">削除</button>
-      <button type="button" class="btn" id="goProposal">比較試算書を作る</button>
+      <button type="button" class="btn" id="goProposal">比較レポートを作る</button>
     </div>
   </section>
 
@@ -518,10 +528,33 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     <div class="table-wrap"><table id="table"></table></div>
   </section>
 
+  <section class="card" aria-labelledby="ioTitle" id="ioCard">
+    <div class="card-head">
+      <h2 id="ioTitle">データの保存と読み込み</h2>
+      <span class="hint">入力した数字は、このブラウザに自動で残ります</span>
+    </div>
+    <p class="io-text">別のパソコンやスマホで使うとき、控えを残すとき、お客様ごとに分けておくときは、ファイル（.json）に保存してください。保存したファイルは「ファイルから読み込む」で元に戻せます。</p>
+    <div class="io-row">
+      <label class="f" for="ioScope">保存する範囲
+        <select id="ioScope">
+          <option value="all">すべての保険と乗り換え先の設定</option>
+          <option value="current">今選んでいる保険だけ</option>
+        </select>
+      </label>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="ioSave">ファイルに保存</button>
+        <input type="file" id="ioFile" accept=".json,application/json" class="vh">
+        <label class="btn" for="ioFile">ファイルから読み込む</label>
+      </div>
+    </div>
+    <p class="msg" id="ioMsg" aria-live="polite"></p>
+    <div id="ioChoice" class="io-choice"></div>
+  </section>
+
   <section class="card" aria-labelledby="propTitle" id="proposalCard">
     <div class="card-head">
-      <h2 id="propTitle">比較試算書</h2>
-      <span class="hint">今の比較結果をA4の比較試算書にまとめ、PDFで保存できます。保存したPDFを印刷してください</span>
+      <h2 id="propTitle">比較レポート</h2>
+      <span class="hint">今の比較結果をA4の比較レポートにまとめ、PDFで保存できます。保存したPDFを印刷してください</span>
     </div>
     <div class="two">
       <label class="f" for="pr-to">宛名（お客様のお名前）<input type="text" id="pr-to" maxlength="40" placeholder="例：山田 太郎"></label>
@@ -536,7 +569,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     </div>
     <p class="msg" id="prMsg" aria-live="polite"></p>
     <details class="prop-preview" id="prPreview">
-      <summary>比較試算書のプレビューを見る</summary>
+      <summary>比較レポートのプレビューを見る</summary>
       <div class="sheets-wrap"><div id="sheets"></div></div>
     </details>
   </section>
@@ -544,7 +577,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
   <section class="notes card" aria-labelledby="notesTitle">
     <h2 id="notesTitle">前提と注意</h2>
     <ul id="notesList">
-      <li data-skip="1">入力した数字は、使っているブラウザの中だけに保存されます。ほかの人やサーバーには送られません。</li>
+      <li data-skip="1">入力した数字は、使っているブラウザの中だけに保存されます。ほかの人やサーバーには送られません。「ファイルに保存」したファイルには入力した数字がすべて入るので、渡す相手に気をつけてください。</li>
       <li>保険の将来の金額は、入力した「今後の解約返戻金」の表（試算書の予想額）です。表にない年齢は、前後の年から計算した概算です。</li>
       <li data-topic="paying">保険料を払っている途中の保険は、続けた場合に払う保険料と同じ額を、乗り換えた場合も毎月積み立てる前提で比べています。</li>
       <li>配当金は、今たまっている分だけを足しています。今後増える配当金は不確かなので入れていません。貸付金など差し引かれる額は、将来も同じ額が差し引かれる前提です（利息は考えていません）。</li>
@@ -1674,7 +1707,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     update();
   }
 
-  /* ---------- 比較試算書 ---------- */
+  /* ---------- 比較レポート ---------- */
   var PRINT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4'];
   var SH_FONT = '"BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif';
   function todayText() { var d = new Date(); return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
@@ -1709,7 +1742,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     t.appendChild(tb);
     return t;
   }
-  /* 比較試算書用の動かないグラフ（色はすべて直接指定） */
+  /* 比較レポート用の動かないグラフ（色はすべて直接指定） */
   function staticChart(W, H) {
     var a0 = P().currentAge, a1 = Math.min(lastAge(), Math.max(a0 + 3, S.horizonAge));
     if (a1 <= a0) a1 = a0 + 1;
@@ -1792,7 +1825,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
 
     var head = el('div', 'sh-head'), hl = el('div');
     hl.appendChild(el('p', 'sh-eyebrow', '保険の見直し'));
-    hl.appendChild(el('h1', 'sh-title', '比較試算書'));
+    hl.appendChild(el('h1', 'sh-title', '比較レポート'));
     if (pr.to) hl.appendChild(el('p', 'sh-to', pr.to + ' 様'));
     head.appendChild(hl);
     var meta = el('dl', 'sh-meta');
@@ -1941,7 +1974,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     var by = $('pr-by').value.trim();
     pages.forEach(function (sh, i) {
       var f = sh.lastChild;
-      f.appendChild(el('span', null, (by ? by + '　' : '') + '保険の見直し 比較試算書'));
+      f.appendChild(el('span', null, (by ? by + '　' : '') + '保険の見直し 比較レポート'));
       f.appendChild(el('span', null, (i + 1) + ' / ' + pages.length));
     });
   }
@@ -1965,6 +1998,32 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
   }
   function inArtifact() { return !!(window.claude && typeof window.claude.use === 'function'); }
   function setMsg(t, ok) { var m = $('prMsg'); m.textContent = t; m.className = 'msg' + (ok === true ? ' ok' : ok === false ? ' err' : ''); }
+  function safeName(t) { return String(t).replace(/[\\/:*?"<>|\s]+/g, '_'); }
+  /* ファイルを渡す：claude.ai の中では downloads 機能、そうでなければふつうのダウンロード */
+  async function saveOut(name, data, msg, okText) {
+    if (inArtifact()) {
+      var dl = await window.claude.use('downloads');
+      if (!dl) { msg('このページではファイルの保存が使えません。', false); return false; }
+      try {
+        await dl.save({ filename: name, data: data });
+        msg(okText, true);
+        return true;
+      } catch (e) {
+        var code = e && e.code;
+        if (code === 'declined') msg('保存を取りやめました。', null);
+        else if (code === 'rate_limited') msg('保存の確認画面がすでに開いています。少し待ってからもう一度押してください。', false);
+        else msg('このページではファイルの保存が使えません。', false);
+        return false;
+      }
+    }
+    var blob = data instanceof Blob ? data : new Blob([data], { type: 'application/octet-stream' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+    msg(okText, true);
+    return true;
+  }
   var saving = false;
   async function savePdf() {
     if (saving || !ready()) return;
@@ -1984,26 +2043,8 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
         pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
       }
       var blob = pdf.output('blob');
-      var name = ('保険見直し比較試算書_' + (prop().to || P().name) + '_' + ($('pr-date').value || todayText())).replace(/[\\/:*?"<>|\s]+/g, '_') + '.pdf';
-      if (inArtifact()) {
-        var dl = await window.claude.use('downloads');
-        if (!dl) { setMsg('このページではファイルの保存が使えません。', false); return; }
-        try {
-          await dl.save({ filename: name, data: blob });
-          setMsg('PDFを保存しました。PDFを開いて印刷してください。', true);
-        } catch (e) {
-          var code = e && e.code;
-          if (code === 'declined') setMsg('保存を取りやめました。', null);
-          else if (code === 'rate_limited') setMsg('保存の確認画面がすでに開いています。少し待ってからもう一度押してください。', false);
-          else setMsg('このページではファイルの保存が使えません。', false);
-        }
-      } else {
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = name;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
-        setMsg('PDFを保存しました。PDFを開いて印刷してください。', true);
-      }
+      var name = ('保険見直し比較レポート_' + (prop().to || P().name) + '_' + ($('pr-date').value || todayText())).replace(/[\\/:*?"<>|\s]+/g, '_') + '.pdf';
+      await saveOut(name, blob, setMsg, 'PDFを保存しました。PDFを開いて印刷してください。');
     } catch (e) {
       setMsg('PDFを作れませんでした。通信の状態を確かめて、もう一度押してください。', false);
     } finally {
@@ -2021,6 +2062,123 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     $('prPrint').hidden = inArtifact();
     $('prPrint').addEventListener('click', function () { $('prPreview').open = true; renderProposal(); window.print(); });
   }
+  /* ---------- データの保存と読み込み ---------- */
+  var FILE_TAG = 'hoken-norikae';
+  var SETTING_KEYS = ['horizonAge', 'mode', 'months', 'waitRate', 'oneTimeTaxRate', 'chartView', 'showBand', 'proposalBy'];
+  function ymd() { var d = new Date(); return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); }
+  function ioMsg(t, ok) { var m = $('ioMsg'); m.textContent = t; m.className = 'msg' + (ok === true ? ' ok' : ok === false ? ' err' : ''); }
+  function exportText(scope) {
+    var out = { app: FILE_TAG, format: 1, savedAt: new Date().toISOString(), scope: scope };
+    out.policies = scope === 'current' ? [clone(P())] : clone(S.policies);
+    if (scope !== 'current') {
+      out.alts = clone(S.alts);
+      out.settings = {};
+      SETTING_KEYS.forEach(function (k) { if (S[k] !== undefined) out.settings[k] = S[k]; });
+      out.ui = clone(S.ui);
+    }
+    return JSON.stringify(out, null, 2);
+  }
+  async function saveData() {
+    var scope = $('ioScope').value;
+    var name = safeName('保険データ_' + (scope === 'current' ? P().name : 'すべて') + '_' + ymd()) + '.json';
+    ioMsg('保存の準備をしています…');
+    await saveOut(name, exportText(scope), ioMsg, 'ファイルに保存しました。別の端末では「ファイルから読み込む」で開けます。');
+  }
+  function finite(v) { var n = +v; return v !== null && v !== '' && isFinite(n) ? n : null; }
+  function str(v, max) { return String(v == null ? '' : v).slice(0, max); }
+  function cleanPolicy(p) {
+    var q = { id: newId(), name: str(p.name || '読み込んだ保険', 40), note: str(p.note, 200), builtin: false, edited: true };
+    ['currentAge', 'currentYear', 'contractYear', 'surrenderNow', 'dividend', 'deduction', 'premiums', 'annualPremium', 'payEndAge', 'deathBenefit'].forEach(function (k) { q[k] = finite(p[k]); });
+    ['surrenderNow', 'dividend', 'deduction', 'premiums', 'annualPremium'].forEach(function (k) { if (q[k] == null || q[k] < 0) q[k] = 0; });
+    if (q.currentAge == null) q.currentAge = 50;
+    if (q.currentYear == null) q.currentYear = 2026;
+    q.table = (Array.isArray(p.table) ? p.table : [])
+      .filter(function (r) { return Array.isArray(r) && finite(r[0]) != null && finite(r[1]) != null; })
+      .map(function (r) { return [Math.round(+r[0]), +r[1]]; }).slice(0, 300);
+    if (p.proposal && typeof p.proposal === 'object') q.proposal = { to: str(p.proposal.to, 40), comment: str(p.proposal.comment, 600), date: str(p.proposal.date, 20) };
+    return normalizePolicy(q);
+  }
+  function cleanAlts(list) {
+    var TAXES = ['interest', 'free', 'onsale', 'ichiji'];
+    return DEFAULT_ALTS.map(function (d, i) {
+      var a = list[i] && typeof list[i] === 'object' ? list[i] : {};
+      var fx = a.fx && typeof a.fx === 'object' ? a.fx : {};
+      var dfx = d.fx;
+      function num2(v, def) { var n = finite(v); return n == null ? def : n; }
+      return {
+        name: str(a.name || d.name, 30), rate: num2(a.rate, d.rate), vol: Math.max(0, num2(a.vol, d.vol)),
+        tax: TAXES.indexOf(a.tax) >= 0 ? a.tax : d.tax, on: a.on === undefined ? d.on : !!a.on,
+        fx: { on: fx.on === undefined ? dfx.on : !!fx.on, now: num2(fx.now, dfx.now), future: num2(fx.future, dfx.future), vol: Math.max(0, num2(fx.vol, dfx.vol)), fee: Math.max(0, num2(fx.fee, dfx.fee)), low: num2(fx.low, dfx.low), high: num2(fx.high, dfx.high) }
+      };
+    });
+  }
+  function parseImport(text) {
+    var o = JSON.parse(text);
+    if (!o || o.app !== FILE_TAG || !Array.isArray(o.policies)) throw new Error('format');
+    var pols = o.policies.filter(function (p) { return p && typeof p === 'object'; }).map(cleanPolicy).slice(0, 100);
+    if (!pols.length) throw new Error('empty');
+    return { policies: pols, alts: Array.isArray(o.alts) ? cleanAlts(o.alts) : null, settings: o.settings && typeof o.settings === 'object' ? o.settings : null };
+  }
+  var pendingImport = null, replaceArmed = null;
+  function renderImportChoice(fileName) {
+    var box = $('ioChoice'); box.textContent = '';
+    if (!pendingImport) return;
+    var im = pendingImport;
+    var names = im.policies.map(function (p) { return p.name; });
+    var info = el('p', 'hint', '「' + fileName + '」：保険 ' + im.policies.length + '件（' + names.slice(0, 5).join('、') + (names.length > 5 ? '…' : '') + '）' + (im.alts ? '・乗り換え先の設定つき' : '') + '。どのように読み込みますか？');
+    box.appendChild(info);
+    var row = el('div', 'btn-row');
+    var add = el('button', 'btn btn-primary', '追加する（今の保険は残す）'); add.type = 'button';
+    var rpl = el('button', 'btn btn-danger', 'すべて置き換える'); rpl.type = 'button';
+    var cancel = el('button', 'btn', 'やめる'); cancel.type = 'button';
+    row.appendChild(add); row.appendChild(rpl); row.appendChild(cancel);
+    box.appendChild(row);
+    add.addEventListener('click', function () {
+      var start = S.policies.length;
+      S.policies = S.policies.concat(im.policies);
+      pendingImport = null; box.textContent = '';
+      switchTo(start);
+      ioMsg('保険を' + im.policies.length + '件追加しました。上の「比べる保険」で切り替えられます。', true);
+    });
+    rpl.addEventListener('click', function () {
+      if (!replaceArmed) {
+        rpl.textContent = 'もう一度押すと、今の保険を消して置き換えます';
+        replaceArmed = setTimeout(function () { rpl.textContent = 'すべて置き換える'; replaceArmed = null; }, 5000);
+        return;
+      }
+      clearTimeout(replaceArmed); replaceArmed = null;
+      S.policies = im.policies;
+      if (im.alts) S.alts = im.alts;
+      if (im.settings) SETTING_KEYS.forEach(function (k) { if (im.settings[k] !== undefined && typeof im.settings[k] === typeof (DEFAULTS[k] !== undefined ? DEFAULTS[k] : '')) S[k] = im.settings[k]; });
+      pendingImport = null; box.textContent = '';
+      buildAlts(); fillGlobalFields(); renderProposalPanel();
+      switchTo(0);
+      ioMsg('ファイルの内容に置き換えました（保険 ' + S.policies.length + '件）。', true);
+    });
+    cancel.addEventListener('click', function () { pendingImport = null; box.textContent = ''; ioMsg('読み込みをやめました。', null); });
+  }
+  function bindIo() {
+    $('ioSave').addEventListener('click', saveData);
+    $('ioFile').addEventListener('change', function () {
+      var f = this.files && this.files[0];
+      this.value = '';
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          pendingImport = parseImport(String(reader.result));
+          ioMsg('');
+          renderImportChoice(f.name);
+        } catch (e) {
+          pendingImport = null; $('ioChoice').textContent = '';
+          ioMsg('このファイルは読み込めませんでした。このアプリで保存したファイル（.json）を選んでください。', false);
+        }
+      };
+      reader.onerror = function () { ioMsg('ファイルを開けませんでした。', false); };
+      reader.readAsText(f);
+    });
+  }
+
   var propTimer = null;
   function refreshProposal() {
     proposalAgeText();
@@ -2060,6 +2218,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
 
   bindStatic();
   bindProposal();
+  bindIo();
   renderProposalPanel();
   buildAlts();
   renderPolicyBar();
