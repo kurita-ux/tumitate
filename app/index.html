@@ -32,6 +32,7 @@
   --s2: #eb6834;
   --s3: #1baf7a;
   --s4: #eda100;
+  --s5: #e87ba4;
   --f-display: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
   --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
   --radius: 10px;
@@ -44,7 +45,7 @@
     --good: #3cc43c; --good-wash: rgba(12, 163, 12, 0.18);
     --bad: #ef7b7b; --bad-wash: rgba(230, 103, 103, 0.16);
     --note-wash: rgba(201, 133, 0, 0.16); --note-line: #e0a020;
-    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
     color-scheme: dark;
   }
 }
@@ -55,7 +56,7 @@
   --good: #3cc43c; --good-wash: rgba(12, 163, 12, 0.18);
   --bad: #ef7b7b; --bad-wash: rgba(230, 103, 103, 0.16);
   --note-wash: rgba(201, 133, 0, 0.16); --note-line: #e0a020;
-  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
   color-scheme: dark;
 }
 
@@ -125,7 +126,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 28px; ma
 
 .headline { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.05rem, 2.6vw, 1.3rem); line-height: 1.55; text-wrap: pretty; }
 .headline strong { color: var(--accent); }
-.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 10px; }
 .opt { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: grid; gap: 4px; align-content: start; }
 .opt.is-base { background: var(--accent-wash); border-color: transparent; }
 .opt-head { display: flex; align-items: center; gap: 8px; font-size: 0.86rem; color: var(--ink-2); min-width: 0; }
@@ -134,7 +135,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 28px; ma
 .opt-val { font-family: var(--f-display); font-weight: 700; font-size: 1.6rem; line-height: 1.25; }
 .opt-val small { font-size: 0.85rem; margin-left: 2px; font-weight: 500; }
 .opt-sub { font-size: 0.78rem; color: var(--muted); }
-.pill { justify-self: start; font-size: 0.8rem; font-weight: 700; padding: 1px 10px; border-radius: 999px; }
+.pill { justify-self: start; font-size: 0.8rem; font-weight: 700; padding: 1px 10px; border-radius: 999px; white-space: nowrap; }
 .pill.good { color: var(--good); background: var(--good-wash); }
 .pill.bad { color: var(--bad); background: var(--bad-wash); }
 .breakeven { border-top: 1px solid var(--line); padding-top: 12px; color: var(--ink-2); font-size: 0.92rem; }
@@ -208,7 +209,7 @@ th .key { display: inline-block; vertical-align: middle; margin-right: 5px; }
 
 /* 万一のとき・値動きの幅 */
 .opt-range { font-size: 0.78rem; color: var(--ink-2); }
-.opt-val .mid { font-size: 0.72rem; color: var(--muted); }
+.opt-val .mid { display: block; font-family: var(--f-body); font-weight: 400; font-size: 0.72rem; color: var(--muted); }
 .chart-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 8px; overflow: hidden; }
 .seg button { font: inherit; font-size: 0.84rem; padding: 4px 14px; background: transparent; color: var(--ink-2); border: 0; cursor: pointer; }
@@ -346,6 +347,7 @@ label.f.full { grid-column: 1 / -1; }
       <li>解約で受け取るお金は「一時所得」として、もうけから50万円を引き、その半分に税率をかけて税金を計算しています。同じ年にほかの一時所得（満期金など）があると、50万円の枠を分け合います。</li>
       <li>預金・国債の利息には20.315%の税金がかかる前提です。NISAは非課税、特定口座は売るときにもうけに20.315%かかる前提です。</li>
       <li>乗り換え先が保険（税金のかかり方「一時所得」）の場合は、(受取額 − 払い込んだ額 − 50万円) × 1/2 に「所得税＋住民税の税率」をかけています。年利には、その保険の返戻率を1年あたりに直した数字を入れてください（例：10年後に返戻率110%なら年約0.96%）。</li>
+      <li><span class="tag">仮</span>「保険（一時払など）」の年1.0%は仮の数字です。実際に検討する保険の返戻率から換算した数字に書き換えてください。</li>
       <li>乗り換え先が保険の場合も、その保険の死亡保障は計算に入れていません（「万一のとき」は解約返戻金の額で比べています）。</li>
       <li><span class="tag">仮</span>定期預金0.5%は、2026年のメガバンクの水準をもとにした仮の数字です。ネット銀行では1%を超える例もあります。</li>
       <li><span class="tag">仮</span>個人向け国債（変動10年）1.85%は、2026年11月募集分の最初の利率です。半年ごとに見直されるため、将来の利率はわかりません（<a href="https://www.mof.go.jp/jgbs/individual/kojinmuke/main/issue/hendou10/" target="_blank" rel="noopener">財務省</a>）。</li>
@@ -381,10 +383,11 @@ label.f.full { grid-column: 1 / -1; }
   var DEFAULT_ALTS = [
     { name: '定期預金', rate: 0.5, vol: 0, tax: 'interest', on: true },
     { name: '個人向け国債（変動10年）', rate: 1.85, vol: 0, tax: 'interest', on: true },
-    { name: 'NISA（投資信託）', rate: 4.0, vol: 15, tax: 'free', on: true }
+    { name: 'NISA（投資信託）', rate: 4.0, vol: 15, tax: 'free', on: true },
+    { name: '保険（一時払など）', rate: 1.0, vol: 0, tax: 'ichiji', on: true }
   ];
   var DEFAULTS = { horizonAge: 65, mode: 'lump', months: 24, waitRate: 0.4, oneTimeTaxRate: 20, chartView: 'surrender', showBand: true };
-  var COLORS = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)'];
+  var COLORS = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)', 'var(--s5)'];
   var TAX_LABEL = { interest: '利息に課税', free: '非課税', onsale: '売却時に課税', ichiji: '一時所得（保険）' };
   var SVGNS = 'http://www.w3.org/2000/svg';
   var Z = 1.2815516; /* 10回中8回の幅（上下10%点） */
@@ -403,7 +406,10 @@ label.f.full { grid-column: 1 / -1; }
       var raw = localStorage.getItem(KEY);
       if (!raw) return null;
       var o = JSON.parse(raw);
-      if (o && o.policy && o.alts && o.sig === sig()) return o;
+      if (o && o.policy && o.alts && o.sig === sig()) {
+        for (var i = o.alts.length; i < DEFAULT_ALTS.length; i++) o.alts.push(clone(DEFAULT_ALTS[i]));
+        return o;
+      }
     } catch (e) { /* 保存領域が使えない場合は既定値で動かす */ }
     return null;
   }
@@ -623,7 +629,7 @@ label.f.full { grid-column: 1 / -1; }
     hd.appendChild(k); hd.appendChild(el('span', null, '保険を続ける'));
     c.appendChild(hd);
     var v = el('div', 'opt-val', f1(base)); v.appendChild(el('small', null, '万円')); c.appendChild(v);
-    c.appendChild(el('div', 'opt-sub', '年' + pct(insYield(age)) + 'で増えるのと同じ（税引後）'));
+    c.appendChild(el('div', 'opt-sub', '年' + pct(insYield(age)) + 'で増えるのと同じ（税引後）。ほかの欄の ▲▼ はこの額との差です'));
     box.appendChild(c);
 
     list.forEach(function (o) {
@@ -634,7 +640,7 @@ label.f.full { grid-column: 1 / -1; }
       head.appendChild(key); head.appendChild(el('span', null, a.name));
       card.appendChild(head);
       var val = el('div', 'opt-val', f1(o.v)); val.appendChild(el('small', null, '万円'));
-      if (hasVol(a)) val.appendChild(el('span', 'mid', ' 真ん中の予想'));
+      if (hasVol(a)) val.appendChild(el('span', 'mid', '真ん中の予想'));
       card.appendChild(val);
       card.appendChild(el('div', 'opt-sub', '年' + pct(a.rate) + '・' + TAX_LABEL[a.tax] + (hasVol(a) ? '・ぶれ幅' + a.vol + '%' : '')));
       if (hasVol(a)) {
@@ -642,7 +648,8 @@ label.f.full { grid-column: 1 / -1; }
         card.appendChild(el('div', 'opt-range', '値動きの幅：' + f1(rg.lo) + '〜' + f1(rg.hi) + '万円'));
         card.appendChild(el('div', 'opt-range', '保険を下回る確率：約' + pctInt(probBelow(a, yrs, base))));
       }
-      var pill = el('span', 'pill ' + (d >= 0 ? 'good' : 'bad'), (d >= 0 ? '▲ 保険より ' : '▼ 保険より ') + signed(d));
+      var pill = el('span', 'pill ' + (d >= 0 ? 'good' : 'bad'), (d >= 0 ? '▲ ' : '▼ ') + signed(d));
+      pill.setAttribute('aria-label', '保険より ' + signed(d));
       card.appendChild(pill);
       box.appendChild(card);
     });
