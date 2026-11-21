@@ -11,6 +11,10 @@
   - **公開リポジトリなので、ここには架空のサンプルだけを入れる**
   - 入力した値はブラウザ（localStorage、キー `hoken-norikae-v3`）にだけ保存される
   - 初期データを変えたら `DATA_VERSION` を上げる（利用者が編集していない初期の保険だけ入れ替わる）
+- `excel/make_xlsx.py` … シンプルな Excel 版（保険A と 保険B の返戻率・年利回りを比べる）を作るスクリプト
+  - 引数なし → 架空サンプル入りのひな形 `excel/hoken-rimawari-hikaku-sample.xlsx`
+  - `python excel/make_xlsx.py 本人データ.json 出力.xlsx` → 本人用（JSONも出力もリポジトリに置かない）
+  - 作ったら xlsx スキルの `recalc.py` で計算と式のエラーを確認する
 - `PROGRESS.md` … 作業の進み具合
 - `KNOWLEDGE.md` … 計算ルールや金利などの学び
 
