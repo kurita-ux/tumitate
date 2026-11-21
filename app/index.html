@@ -345,6 +345,8 @@ label.f.full { grid-column: 1 / -1; }
       <li>配当金は、今たまっている分だけを足しています。今後増える配当金は不確かなので入れていません。</li>
       <li>解約で受け取るお金は「一時所得」として、もうけから50万円を引き、その半分に税率をかけて税金を計算しています。同じ年にほかの一時所得（満期金など）があると、50万円の枠を分け合います。</li>
       <li>預金・国債の利息には20.315%の税金がかかる前提です。NISAは非課税、特定口座は売るときにもうけに20.315%かかる前提です。</li>
+      <li>乗り換え先が保険（税金のかかり方「一時所得」）の場合は、(受取額 − 払い込んだ額 − 50万円) × 1/2 に「所得税＋住民税の税率」をかけています。年利には、その保険の返戻率を1年あたりに直した数字を入れてください（例：10年後に返戻率110%なら年約0.96%）。</li>
+      <li>乗り換え先が保険の場合も、その保険の死亡保障は計算に入れていません（「万一のとき」は解約返戻金の額で比べています）。</li>
       <li><span class="tag">仮</span>定期預金0.5%は、2026年のメガバンクの水準をもとにした仮の数字です。ネット銀行では1%を超える例もあります。</li>
       <li><span class="tag">仮</span>個人向け国債（変動10年）1.85%は、2026年11月募集分の最初の利率です。半年ごとに見直されるため、将来の利率はわかりません（<a href="https://www.mof.go.jp/jgbs/individual/kojinmuke/main/issue/hendou10/" target="_blank" rel="noopener">財務省</a>）。</li>
       <li><span class="tag">仮</span>NISAの年4%は、投資信託の「ならした平均」の仮置きです。元本は保証されず、年によっては大きく減ることもあります。</li>
@@ -383,7 +385,7 @@ label.f.full { grid-column: 1 / -1; }
   ];
   var DEFAULTS = { horizonAge: 65, mode: 'lump', months: 24, waitRate: 0.4, oneTimeTaxRate: 20, chartView: 'surrender', showBand: true };
   var COLORS = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)'];
-  var TAX_LABEL = { interest: '利息に課税', free: '非課税', onsale: '売却時に課税' };
+  var TAX_LABEL = { interest: '利息に課税', free: '非課税', onsale: '売却時に課税', ichiji: '一時所得（保険）' };
   var SVGNS = 'http://www.w3.org/2000/svg';
   var Z = 1.2815516; /* 10回中8回の幅（上下10%点） */
 
@@ -503,6 +505,8 @@ label.f.full { grid-column: 1 / -1; }
     }
     var val = Math.max(0, cash) + inv;
     if (alt.tax === 'onsale') val -= Math.max(0, inv - basis) * TAX;
+    /* 保険：一時所得 (受取額 − 払い込んだ額 − 50万円) × 1/2 に所得税＋住民税の税率 */
+    if (alt.tax === 'ichiji') val -= Math.max(0, inv - basis - 50) / 2 * S.oneTimeTaxRate / 100;
     return val;
   }
   function hasVol(alt) { return (alt.vol || 0) > 0; }
@@ -643,7 +647,7 @@ label.f.full { grid-column: 1 / -1; }
       box.appendChild(card);
     });
 
-    var bi = breakeven('interest', age), bf = breakeven('free', age);
+    var bi = breakeven('interest', age), bf = breakeven('free', age), bj = breakeven('ichiji', age);
     var be = $('breakeven'); be.textContent = '';
     be.appendChild(document.createTextNode('判断の目安：保険を' + age + '歳まで続けると、税引後で '));
     be.appendChild(el('strong', null, '年' + pct(insYield(age))));
@@ -651,6 +655,8 @@ label.f.full { grid-column: 1 / -1; }
     be.appendChild(el('strong', null, '年' + pct(bi) + '以上'));
     be.appendChild(document.createTextNode('、非課税のNISAなら '));
     be.appendChild(el('strong', null, '年' + pct(bf) + '以上'));
+    be.appendChild(document.createTextNode('、一時所得になる保険なら '));
+    be.appendChild(el('strong', null, '年' + pct(bj) + '以上'));
     be.appendChild(document.createTextNode(' の利回りが必要です' + (S.mode === 'monthly' ? '（' + S.months + 'か月に分けて移す前提）。' : '。')));
     renderDeath(age, yrs, list);
   }
@@ -953,7 +959,7 @@ label.f.full { grid-column: 1 / -1; }
       lr.appendChild(unit);
       var lt = el('label', 'f', '税金のかかり方'); lt.htmlFor = 'alt' + i + '-tax';
       var sel = document.createElement('select'); sel.id = 'alt' + i + '-tax';
-      [['interest', '利息に課税（預金・国債）'], ['free', '非課税（NISA）'], ['onsale', '売却時に課税（特定口座）']].forEach(function (o) {
+      [['interest', '利息に課税（預金・国債）'], ['free', '非課税（NISA）'], ['onsale', '売却時に課税（特定口座）'], ['ichiji', '一時所得（保険の解約・満期）']].forEach(function (o) {
         var op = el('option', null, o[1]); op.value = o[0]; if (o[0] === alt.tax) op.selected = true; sel.appendChild(op);
       });
       lt.appendChild(sel);
