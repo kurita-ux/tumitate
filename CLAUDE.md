@@ -28,6 +28,13 @@
   - db・user：スマホ→パソコンの受け渡し（本人専用の保存場所 `data/users/<id>/scan-inbox`。パソコンが合言葉つきで「待っている」と書き、受け取ったら消す）
 - QRコードに入れるURLは POLICY_DATA ブロックの `APP_URL`。共有用は共有ページのURL、自分用は自分用ページのURLに差し替える
 
+## 自分のサイト（会員サイト）に置く版
+- `app/index.html` の `/* SERVER_CONFIG_START */` の `SERVER_API` に、そのサイトの窓口のパスを入れたコピーを置く（リポジトリでは空のまま）
+- `SERVER_API` があると、claude.ai の機能の代わりにサーバーの窓口を使う
+  - 受け渡し：`{SERVER_API}/handoff/new・status・put・done・get・end`（QRは `?h=番号`）
+  - 読み取り：`{SERVER_API}/surrender` に `{files, tiles}` を送り、OCR_PROMPT の形の JSON を受け取る
+- 会員サイトのアドレスや設定は、公開リポジトリに書かない。置き方はユーザーに渡した引き継ぎ書で伝える
+
 ## ルール
 - ユーザー本人の保険の数字は、このリポジトリにコミットしない
   （本人の数字入りの版は claude.ai の非公開 Artifact「保険の乗り換え判定」で管理）
