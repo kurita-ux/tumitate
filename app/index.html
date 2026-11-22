@@ -277,6 +277,11 @@ label.f.full { grid-column: 1 / -1; }
 .scan-result { display: grid; gap: 6px; }
 .scan-result:empty { display: none; }
 body.is-scan .wrap > *:not(#scanMode) { display: none !important; }
+.only-phone { display: none; }
+@media (max-width: 640px) { .only-phone { display: inline-flex; } }
+.qr-help { font-size: 0.82rem; color: var(--ink-2); }
+.qr-help summary { cursor: pointer; color: var(--accent); }
+.qr-help ul { margin: 6px 0 0; padding-left: 1.2em; display: grid; gap: 4px; }
 textarea {
   font: inherit; font-size: 0.85rem; color: var(--ink); background: var(--bg);
   border: 1px solid var(--axis); border-radius: 6px; padding: 8px; width: 100%; min-width: 0; resize: vertical;
@@ -404,6 +409,7 @@ label.btn { display: inline-flex; align-items: center; }
       <button type="button" class="btn" id="pDup">複製</button>
       <button type="button" class="btn btn-danger" id="pDel">削除</button>
       <button type="button" class="btn" id="goProposal">比較レポートを作る</button>
+      <button type="button" class="btn only-phone" id="goScan">撮影してパソコンに送る</button>
     </div>
   </section>
 
@@ -543,7 +549,17 @@ label.btn { display: inline-flex; align-items: center; }
                 <div class="qr-box" id="qrBox" hidden>
                   <canvas id="qrCanvas" width="200" height="200" role="img" aria-label="スマホで読み取るQRコード"></canvas>
                   <div class="qr-side">
-                    <p class="hint">スマホは、このパソコンと同じClaudeのアカウントでログインしておいてください。QRコードが読めないときは、このリンクをスマホに送って開いてください。</p>
+                    <p class="hint">スマホのカメラで読み取って、このページを開いてください。開くと自動で撮影の画面になります。スマホは、このパソコンと同じClaudeのアカウントでログインしておいてください。</p>
+                    <label class="check" for="qrSafari"><input type="checkbox" id="qrSafari"> iPhoneのSafariで開くQRコードにする（試験的）</label>
+                    <details class="qr-help">
+                      <summary>ふつうのClaudeの会話画面が開いてしまうとき</summary>
+                      <ul>
+                        <li>スマホのClaudeのアプリが、このページの代わりに会話画面を開いていることがあります。</li>
+                        <li>iPhoneなら、上の「Safariで開く」にチェックを入れて、出し直したQRコードを読み取ってください。</li>
+                        <li>または、下のリンクをコピーしてスマホに送り、SafariやChromeなどのブラウザで開いてください。</li>
+                        <li>このページをスマホで開けたら、上の「撮影してパソコンに送る」を押しても撮影の画面になります。</li>
+                      </ul>
+                    </details>
                     <code class="qr-link" id="qrLink"></code>
                     <div class="btn-row">
                       <button type="button" class="btn" id="qrCopy">リンクをコピー</button>
@@ -2388,6 +2404,14 @@ label.btn { display: inline-flex; align-items: center; }
     for (var i = 0; i < a.length; i++) t += 'abcdefghijkmnpqrstuvwxyz23456789'.charAt(a[i] % 32);
     return t;
   }
+  function qrValue() { return ($('qrSafari').checked ? 'x-safari-' : '') + APP_URL; }
+  function drawQr() {
+    var url = qrValue();
+    new window.QRious({ element: $('qrCanvas'), value: url, size: 200, padding: 14, level: 'M', background: '#ffffff', foreground: '#14181a' });
+    $('qrLink').textContent = APP_URL;
+  }
+  /* スマホとの受け渡しに使う、本人専用の箱（パソコンが待っている間だけある） */
+  function inboxRef(db, uid) { return db.doc('data/users/' + uid + '/scan-inbox'); }
   async function startQr() {
     setQr('');
     var db = await capUse('db'), user = await capUse('user');
@@ -2397,17 +2421,18 @@ label.btn { display: inline-flex; align-items: center; }
     var uid = await user.id().catch(function () { return null; });
     if (!uid) { setQr('claude.ai にログインすると使えます。', false); return; }
     stopQr(false);
-    var url = APP_URL + '#scan-' + randomToken();
+    var token = randomToken(), ref = inboxRef(db, uid);
+    try { await ref.set({ status: 'waiting', id: token, at: Date.now() }); }
+    catch (e) { setQr('このページでは、スマホとの受け渡しの準備ができませんでした。「写真・画像から読み取る」を使ってください。', false); return; }
     try { await loadScript(QR_LIB); } catch (e) { setQr('QRコードを作れませんでした。通信の状態を確かめて、もう一度押してください。', false); return; }
-    new window.QRious({ element: $('qrCanvas'), value: url, size: 200, padding: 14, level: 'M', background: '#ffffff', foreground: '#14181a' });
-    $('qrLink').textContent = url;
+    drawQr();
     $('qrBox').hidden = false;
     setQr('スマホからの読み取りを待っています…');
-    var ref = db.doc('data/users/' + uid + '/scan-' + url.split('#scan-')[1]);
     qr.ref = ref;
     qr.unsub = ref.onSnapshot(function (snap) {
       if (!snap.exists) return;
       var d = snap.data() || {};
+      if (d.id !== token) return;
       if (d.status === 'reading') { setQr('スマホで写真を読み取っています…'); return; }
       if (d.status === 'error') { setQr('スマホでの読み取りがうまくいきませんでした：' + str(d.message, 120) + '　スマホで撮り直せます。', false); return; }
       if (d.status === 'done') {
@@ -2426,50 +2451,63 @@ label.btn { display: inline-flex; align-items: center; }
 
   /* --- スマホ側：QRコードから開いたとき --- */
   function setScan(t, ok) { var m = $('scanStatus'); m.textContent = t; m.className = 'msg' + (ok === true ? ' ok' : ok === false ? ' err' : ''); }
-  async function initScanMode() {
-    var m = /^#scan-([a-z0-9]{6,24})$/.exec(location.hash || '');
-    if (!m) return;
+  var scan = { ref: null, busy: false };
+  function enterScan(note) {
     document.body.classList.add('is-scan');
     $('scanMode').hidden = false;
-    var token = m[1], ref = null, busy = false;
-    var db = await capUse('db'), user = await capUse('user');
-    var uid = user ? await user.id().catch(function () { return null; }) : null;
-    if (db && uid) ref = db.doc('data/users/' + uid + '/scan-' + token);
-    else setScan('このページでは、パソコンへ送れません。読み取った結果は、このスマホのアプリに入れられます。');
-    async function onFile(file) {
-      if (!file || busy) return;
-      busy = true; $('scanStop').hidden = false; $('scanResult').textContent = '';
-      if (ref) await ref.set({ status: 'reading', at: Date.now() }).catch(function () { ref = null; });
-      try {
-        var res = await readWithClaude(file, setScan);
-        var ages = res.rows.map(function (r) { return r.age; }).filter(function (a) { return a != null; });
-        var sum = el('p', 'hint', res.rows.length + '行を読み取りました' + (ages.length ? '（' + Math.min.apply(null, ages) + '歳〜' + Math.max.apply(null, ages) + '歳）' : '') + '。');
-        $('scanResult').appendChild(sum);
-        if (ref) {
-          await ref.set({ status: 'done', at: Date.now(), result: toWire(res) });
-          setScan('パソコンに送りました。パソコンの画面で内容を確かめて、表に入れてください。', true);
-        } else {
-          parsed = ocrToParsed(res);
-          setScan('読み取りました。「このスマホでアプリを使う」を押すと、保険のデータの欄で確認して入れられます。', true);
-        }
-      } catch (e) {
-        var msg = ocrError(e && e.code);
-        setScan(msg, false);
-        if (ref) ref.set({ status: 'error', at: Date.now(), message: msg }).catch(function () { /* 送れなくても画面には出ている */ });
-      } finally {
-        busy = false; $('scanStop').hidden = true; readCtl = null;
+    window.scrollTo(0, 0);
+    if (note) setScan(note);
+  }
+  async function readInbox() {
+    if (!scan.ref) return null;
+    try { var snap = await scan.ref.get(); return snap.exists ? snap.data() : null; } catch (e) { return null; }
+  }
+  async function onScanFile(file) {
+    if (!file || scan.busy) return;
+    scan.busy = true; $('scanStop').hidden = false; $('scanResult').textContent = '';
+    var d = await readInbox();
+    /* パソコンが待っている（または前の読み取りの続き）ときだけ送る */
+    var token = d && (d.status === 'waiting' || d.status === 'reading' || d.status === 'error') ? d.id : null;
+    if (token) await scan.ref.set({ status: 'reading', id: token, at: Date.now() }).catch(function () { token = null; });
+    try {
+      var res = await readWithClaude(file, setScan);
+      var ages = res.rows.map(function (r) { return r.age; }).filter(function (a) { return a != null; });
+      $('scanResult').appendChild(el('p', 'hint', res.rows.length + '行を読み取りました' + (ages.length ? '（' + Math.min.apply(null, ages) + '歳〜' + Math.max.apply(null, ages) + '歳）' : '') + '。'));
+      if (token) {
+        await scan.ref.set({ status: 'done', id: token, at: Date.now(), result: toWire(res) });
+        setScan('パソコンに送りました。パソコンの画面で内容を確かめて、表に入れてください。', true);
+      } else {
+        parsed = ocrToParsed(res);
+        setScan('パソコンが待っていなかったため、送れませんでした。パソコンで「QRコードを出す」を押してから撮り直すか、「このスマホでアプリを使う」を押して、このスマホで表に入れてください。', false);
       }
+    } catch (e) {
+      var msg = ocrError(e && e.code);
+      setScan(msg, false);
+      if (token) scan.ref.set({ status: 'error', id: token, at: Date.now(), message: msg }).catch(function () { /* 送れなくても画面には出ている */ });
+    } finally {
+      scan.busy = false; $('scanStop').hidden = true; readCtl = null;
     }
+  }
+  async function initScanMode() {
     ['scanCamera', 'scanPick'].forEach(function (id) {
-      $(id).addEventListener('change', function () { var f = this.files && this.files[0]; this.value = ''; onFile(f); });
+      $(id).addEventListener('change', function () { var f = this.files && this.files[0]; this.value = ''; onScanFile(f); });
     });
     $('scanStop').addEventListener('click', function () { if (readCtl) readCtl.abort(); });
     $('scanExit').addEventListener('click', function () {
       document.body.classList.remove('is-scan'); $('scanMode').hidden = true;
-      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+      if (/^#scan/.test(location.hash || '')) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; } }
       if (parsed) { $('importBox').open = true; renderPreview(); $('policyCard').scrollIntoView({ block: 'start' }); }
       renderChart();
     });
+    $('goScan').addEventListener('click', function () { enterScan('試算書を撮影してください。'); });
+    var db = await capUse('db'), user = await capUse('user');
+    var uid = user ? await user.id().catch(function () { return null; }) : null;
+    if (db && uid) scan.ref = inboxRef(db, uid);
+    var byHash = /^#scan(-[a-z0-9]{6,24})?$/.test(location.hash || '');
+    var d = await readInbox();
+    var waiting = !!(d && d.status === 'waiting' && Math.abs(Date.now() - (d.at || 0)) < 30 * 60 * 1000);
+    if (waiting) enterScan('パソコンが待っています。試算書を撮影してください。');
+    else if (byHash) enterScan(scan.ref ? 'パソコンで「QRコードを出す」を押してから撮影してください。' : 'このページでは、パソコンへ送れません。読み取った結果は、このスマホのアプリに入れられます。');
   }
   async function initRead() {
     var sample = await capUse('sample');
@@ -2490,6 +2528,7 @@ label.btn { display: inline-flex; align-items: center; }
         navigator.clipboard.writeText(t).then(function () { setQr('リンクをコピーしました。スマホに送って開いてください。', true); }, function () { selectText($('qrLink')); });
       } else selectText($('qrLink'));
     });
+    $('qrSafari').addEventListener('change', function () { if (!$('qrBox').hidden && window.QRious) drawQr(); });
     $('photoFile').addEventListener('change', function () { var f = this.files && this.files[0]; this.value = ''; if (f) readPhotoHere(f); });
     $('readStop').addEventListener('click', function () { if (readCtl) readCtl.abort(); });
     $('readWays').hidden = true;
