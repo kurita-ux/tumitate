@@ -586,13 +586,15 @@ label.btn { display: inline-flex; align-items: center; }
       <li data-topic="ichiji">乗り換え先が保険（税金のかかり方「一時所得」）の場合は、(受取額 − 払い込んだ額 − 50万円) × 1/2 に「所得税＋住民税の税率」をかけています。年利には、その保険の返戻率を1年あたりに直した数字を入れてください（例：10年後に返戻率110%なら年約0.96%）。</li>
       <li data-alt="3"><span class="tag">仮</span>「保険（ドル建て）」の年3.5%（ドルでの利回り）は仮の数字です。外貨建て保険は商品によって年3〜5%程度とされますが、実際に検討する保険の数字に書き換えてください。</li>
       <li data-topic="fx"><span class="tag">仮</span>今の為替 1ドル＝159円は、2026年11月18日の東京市場の値です（<a href="https://www.boj.or.jp/en/statistics/market/forex/fxdaily/fxlist/fx261118.pdf" target="_blank" rel="noopener">日本銀行</a>）。為替のぶれ幅 年10%は過去のドル円の動きをもとにした目安、両替の手数料 片道0.5円（1ドルあたり）は会社によって違う仮の数字です。</li>
-      <li data-topic="fx">ドル建ての為替は、すべて1ドルあたりの円です。円をドルに替えるときと、ドルを円に戻すときに手数料がかかる前提です。「受け取る時の為替」は選んだ年齢の時点の真ん中の想定で、それまでの年は少しずつ近づくとして計算しています。積み立てる分も今の為替で替える前提の概算です。外貨預金の為替差益にかかる税金は考えていません。</li>
+      <li data-topic="fx">ドル建ての為替は、すべて1ドルあたりの円です。円をドルに替えるときと、ドルを円に戻すときに手数料がかかる前提です。「受け取る時の為替」は選んだ年齢の時点の真ん中の想定で、それまでの年は少しずつ近づき、その年齢より後は同じ為替のままとして計算しています。積み立てる分も今の為替で替える前提の概算です。外貨預金の為替差益にかかる税金は考えていません。</li>
       <li data-topic="ichiji">乗り換え先が保険の場合も、その保険の死亡保障は計算に入れていません（「万一のとき」は解約返戻金の額で比べています）。</li>
       <li data-alt="0"><span class="tag">仮</span>定期預金0.5%は、2026年のメガバンクの水準をもとにした仮の数字です。ネット銀行では1%を超える例もあります。</li>
       <li data-alt="1"><span class="tag">仮</span>個人向け国債（変動10年）1.85%は、2026年11月募集分の最初の利率です。半年ごとに見直されるため、将来の利率はわかりません（<a href="https://www.mof.go.jp/jgbs/individual/kojinmuke/main/issue/hendou10/" target="_blank" rel="noopener">財務省</a>）。</li>
       <li data-alt="2"><span class="tag">仮</span>NISAの年4%は、投資信託の「ならした平均」の仮置きです。元本は保証されず、年によっては大きく減ることもあります。</li>
       <li data-alt="2"><span class="tag">仮</span>NISAの「1年のぶれ幅15%」は、全世界株式の過去の値動きをもとにした仮の数字です。うすい帯と「値動きの幅」は、10回のうち8回はこの範囲に入る幅です（上と下に1回ずつは外れます）。</li>
       <li data-topic="vol">値動きの幅と「保険を下回る確率」は、統計でよく使う考え方（対数正規分布）での概算です。実際の相場はこの通りには動きません。</li>
+      <li><span class="tag">仮</span>「所得税＋住民税の税率」20%は、一時所得の税金を計算するための仮の数字です。実際の税率は、ほかの収入によって変わります（所得税5〜45%に住民税10%などが加わります）。</li>
+      <li data-topic="monthly"><span class="tag">仮</span>毎月少しずつ移す場合の「移す前のお金を置く預金の金利」0.4%は、2026年のメガバンクの普通預金の水準をもとにした仮の数字です。</li>
       <li data-topic="death">死亡保険金は金額が一定で、契約者と被保険者が本人、受取人が家族という前提です（解約返戻金の方が多い年はその額）。死亡保険金には相続税の非課税枠（500万円×法定相続人の数）がありますが、この比較では相続税は考えていません。</li>
       <li>預金・国債の利回りは毎年同じとして計算しています。試算書の時期（契約応当日）と今の数か月のずれは無視しています。</li>
     </ul>
@@ -641,7 +643,7 @@ label.btn { display: inline-flex; align-items: center; }
 
   /* ---------- 保存と読み込み ---------- */
   function normalizePolicy(p) {
-    var d = { name: '名前なしの保険', note: '', builtin: false, edited: true, currentAge: 50, currentYear: 2026, contractYear: null,
+    var d = { name: '名前なしの保険', note: '', builtin: false, edited: true, tableKey: 'year', currentAge: 50, currentYear: 2026, contractYear: null,
       surrenderNow: 0, dividend: 0, deduction: 0, premiums: 0, annualPremium: 0, payEndAge: null, deathBenefit: null, table: [] };
     for (var k in d) if (p[k] === undefined) p[k] = d[k];
     if (!p.id) p.id = newId();
@@ -682,7 +684,11 @@ label.btn { display: inline-flex; align-items: center; }
         /* 自分で変えていない最初からの保険は、新しい数字に入れ替える */
         DEFAULT_POLICIES.forEach(function (d) {
           for (var i = 0; i < o.policies.length; i++) {
-            if (o.policies[i].id === d.id && !o.policies[i].edited) { var np = normalizePolicy(clone(d)); np.edited = false; o.policies[i] = np; }
+            if (o.policies[i].id === d.id && !o.policies[i].edited) {
+              var np = normalizePolicy(clone(d)); np.edited = false;
+              if (o.policies[i].proposal) np.proposal = o.policies[i].proposal;
+              o.policies[i] = np;
+            }
           }
         });
         o.dataVersion = DATA_VERSION;
@@ -740,6 +746,7 @@ label.btn { display: inline-flex; align-items: center; }
     var s = String(name).replace(/（[^）]*）|\([^)]*\)/g, '').trim() || String(name);
     return s.length > 7 ? s.slice(0, 7) + '…' : s;
   }
+  function pctFloor(v) { return (Math.floor(v * 10 + 1e-9) / 10).toFixed(1) + '%'; }
   function pctInt(p) { var v = Math.round(p * 100); return v < 1 && p > 0 ? '1%未満' : v > 99 && p < 1 ? '99%超' : v + '%'; }
 
   /* ---------- 保険の計算 ---------- */
@@ -803,7 +810,7 @@ label.btn { display: inline-flex; align-items: center; }
   function hasVol(alt) { return (alt.vol || 0) > 0 || (isFx(alt) && (alt.fx.vol || 0) > 0); }
   function fxMedianAt(fx, yrs) {
     var th = Math.max(1, yearsTo(S.horizonAge));
-    return fx.now * Math.pow(fx.future / fx.now, yrs / th);
+    return fx.now * Math.pow(fx.future / fx.now, Math.min(yrs, th) / th);
   }
   /* alt: 乗り換え先、yrs: 何年後、z: 値動きのずれ（0なら真ん中）、fxLevel: 為替を指定するとき、noSpread: 移し方を一括に固定 */
   function sim(alt, yrs, z, fxLevel, noSpread) {
@@ -904,6 +911,7 @@ label.btn { display: inline-flex; align-items: center; }
     $('reset').hidden = !def;
   }
   function switchTo(i) {
+    if (delArmed) { clearTimeout(delArmed); delArmed = null; $('pDel').textContent = '削除'; }
     S.current = i;
     fillPolicyFields(); buildRows(); renderPolicyBar(); renderProposalPanel(); update();
   }
@@ -944,7 +952,7 @@ label.btn { display: inline-flex; align-items: center; }
     box.textContent = '';
     var items = [
       ['今解約した場合の受取額', f1(gross - p.deduction), '万円', '解約返戻金 ' + f1(p.surrenderNow) + ' ＋ 配当金など ' + f1(p.dividend) + (p.deduction > 0 ? ' − 差し引き ' + f1(p.deduction) : '')],
-      ['払い込んだ保険料の合計', f1(p.premiums), '万円', '単純返戻率 ' + pct(gross / p.premiums * 100, 1)],
+      ['払い込んだ保険料の合計', f1(p.premiums), '万円', '単純返戻率 ' + pctFloor(p.surrenderNow / p.premiums * 100) + '（解約返戻金÷保険料）'],
       ['増えた分', signed(gross - p.premiums).replace('万円', ''), '万円', '税金 ' + (tax > 0.005 ? f1(tax) + '万円' : '0円（50万円の非課税枠内）')],
       ['乗り換えに回せる額', f1(net), '万円', p.currentYear + '年・' + p.currentAge + '歳時点']
     ];
@@ -1511,7 +1519,7 @@ label.btn { display: inline-flex; align-items: center; }
       var del = el('button', 'btn btn-icon', '×'); del.type = 'button'; del.setAttribute('aria-label', (i + 1) + '行目を削除');
       row.appendChild(keyIn); row.appendChild(val); row.appendChild(del);
       box.appendChild(row);
-      keyIn.addEventListener('input', function () { var n = num(keyIn.value); if (n != null) { r[0] = yearOfKey(Math.round(n)); p.edited = true; update(); } });
+      keyIn.addEventListener('input', function () { var n = num(keyIn.value); if (n != null) { r[0] = yearOfKey(Math.round(n)); p.tableKey = effKey(); p.edited = true; update(); } });
       val.addEventListener('input', function () { var n = num(val.value); if (n != null && n >= 0) { r[1] = fromUnit(n); p.edited = true; update(); } });
       del.addEventListener('click', function () { p.table.splice(i, 1); p.edited = true; buildRows(); update(); });
     });
@@ -1540,11 +1548,30 @@ label.btn { display: inline-flex; align-items: center; }
     if (allInt && inc && Math.max.apply(null, vals) <= 120) return Math.min.apply(null, vals) >= 15 ? 'age' : 'elapsed';
     return Math.max.apply(null, vals) >= 10000 ? 'yen' : 'man';
   }
+  /* 1行を列に分ける：タブ区切り（Excel）、空白のないカンマ区切り（CSV）、小数のあとにカンマが続く行、引用符つきの行 */
+  function splitFields(line) {
+    if (line.indexOf('\t') >= 0) return line.split('\t');
+    var t = line.trim();
+    var csv = t.indexOf('"') >= 0 || /\d\.\d+\s*,\s*\d/.test(t) || (t.indexOf(',') >= 0 && !/\s/.test(t));
+    if (!csv) return [line];
+    var out = [], cur = '', q = false;
+    for (var i = 0; i < t.length; i++) {
+      var ch = t.charAt(i);
+      if (ch === '"') { q = !q; continue; }
+      if (ch === ',' && !q) { out.push(cur); cur = ''; continue; }
+      cur += ch;
+    }
+    out.push(cur);
+    return out;
+  }
   function parsePaste(text) {
     var rows = [];
     normalizeText(text).split(/\r?\n/).forEach(function (line) {
-      var re = /(\d[\d,]*(?:\.\d+)?)\s*(万円|円|歳|才|年|%)?/g, m, toks = [];
-      while ((m = re.exec(line))) toks.push({ v: parseFloat(m[1].replace(/,/g, '')), u: m[2] || '' });
+      var toks = [];
+      splitFields(line).forEach(function (field) {
+        var re = /(\d[\d,]*(?:\.\d+)?)\s*(万円|円|歳|才|年|%)?/g, m;
+        while ((m = re.exec(field))) toks.push({ v: parseFloat(m[1].replace(/,/g, '')), u: m[2] || '' });
+      });
       if (toks.length >= 2) rows.push(toks);
     });
     if (!rows.length) return { error: '数字が2つ以上ある行が見つかりませんでした。表の部分をコピーして貼り付けてください。' };
@@ -1620,7 +1647,7 @@ label.btn { display: inline-flex; align-items: center; }
     });
     var table = Object.keys(byYear).map(function (y) { return [+y, byYear[y]]; }).sort(function (a, b) { return a[0] - b[0]; });
     if (!table.length) { showMsg('表に入れられる行がありませんでした。列の選び方を確認してください。', false); return; }
-    p.table = table; p.edited = true;
+    p.table = table; p.tableKey = kr; p.edited = true;
     S.ui.key = kr; S.ui.unit = vr === 'yen' ? 'yen' : 'man';
     fillPolicyFields(); buildRows(); update();
     var future = table.filter(function (r) { return r[0] > p.currentYear; }).length;
@@ -1669,6 +1696,7 @@ label.btn { display: inline-flex; align-items: center; }
         if (f[2] === 'money') n = fromUnit(n);
         if (f[2] === 'int') n = Math.round(n);
         if (!f[4](f[2] === 'money' && isYen() ? n : n)) return;
+        shiftTable(p, f[1], p[f[1]], n);
         p[f[1]] = n; p.edited = true;
         afterPolicyChange(f[1]);
       });
@@ -1701,6 +1729,16 @@ label.btn { display: inline-flex; align-items: center; }
       buildAlts(); fillGlobalFields(); update();
     });
     $('parseBtn').addEventListener('click', function () { parsed = parsePaste($('pasteText').value); renderPreview(); });
+  }
+  /* 年齢・経過年数で入れた表は、今の年齢・西暦・契約した年を直しても、同じ年齢（経過年数）の行のままにする。
+     表は西暦で持っているので、入れたときの見出しに合わせて西暦の側をずらす */
+  function shiftTable(p, key, oldV, newV) {
+    if (oldV == null || newV == null || oldV === newV) return;
+    var tk = p.tableKey || 'year', d = 0;
+    if (tk === 'age' && key === 'currentAge') d = oldV - newV;
+    else if (tk === 'age' && key === 'currentYear') d = newV - oldV;
+    else if (tk === 'elapsed' && key === 'contractYear') d = newV - oldV;
+    if (d) p.table.forEach(function (r) { r[0] += d; });
   }
   function afterPolicyChange(key) {
     if (key === 'currentAge' || key === 'currentYear' || key === 'contractYear') buildRows();
@@ -1808,6 +1846,7 @@ label.btn { display: inline-flex; align-items: center; }
       if (t === 'vol' && !anyVol) return;
       if (t === 'death' && !hasDeath()) return;
       if (t === 'paying' && !paying()) return;
+      if (t === 'monthly' && S.mode !== 'monthly') return;
       if (ai != null) {
         var a = S.alts[+ai], d = DEFAULT_ALTS[+ai];
         if (!a || !a.on || a.name !== d.name || a.rate !== d.rate) return;
@@ -1864,7 +1903,7 @@ label.btn { display: inline-flex; align-items: center; }
     var s2 = shSec(++no, '今のご契約');
     var kv = el('dl', 'sh-kv'), gross = p.surrenderNow + p.dividend;
     [['対象の保険', p.name], ['時点', p.currentYear + '年・' + p.currentAge + '歳'],
-     ['今解約した場合の受取額', f1(gross - p.deduction) + '万円'], ['払い込んだ保険料', f1(p.premiums) + '万円（返戻率 ' + pct(gross / p.premiums * 100, 1) + '）'],
+     ['今解約した場合の受取額', f1(gross - p.deduction) + '万円'], ['払い込んだ保険料', f1(p.premiums) + '万円（単純返戻率 ' + pctFloor(p.surrenderNow / p.premiums * 100) + '）'],
      ['これからの保険料', paying() ? '年' + f1(p.annualPremium) + '万円（' + (p.payEndAge != null ? p.payEndAge + '歳まで' : '一生払い') + '）' : 'なし（払込済み）'],
      ['死亡保険金', hasDeath() ? f1(p.deathBenefit) + '万円' : '未入力']
     ].forEach(function (x) { kv.appendChild(el('dt', null, x[0])); kv.appendChild(el('dd', null, x[1])); });
@@ -1926,10 +1965,13 @@ label.btn { display: inline-flex; align-items: center; }
 
     /* 7 年齢ごと */
     var s7 = shSec(++no, '年齢ごとの比較（税引後・万円）');
-    var ages = [];
-    for (var a = Math.ceil((p.currentAge + 1) / 5) * 5; a <= lastAge(); a += 5) ages.push(a);
-    if (ages.indexOf(age) < 0) ages.push(age);
-    ages = ages.filter(function (x, i, arr) { return arr.indexOf(x) === i; }).sort(function (x, y) { return x - y; }).slice(0, 12);
+    var ages = [], step = 5;
+    do {
+      ages = [];
+      for (var a = Math.ceil((p.currentAge + 1) / step) * step; a <= lastAge(); a += step) if (a !== age) ages.push(a);
+      step += 5;
+    } while (ages.length > 11 && step <= 50);
+    ages = ages.slice(0, 11).concat([age]).sort(function (x, y) { return x - y; });
     var head7 = [{ text: '年齢（西暦）' }, { text: '保険を続ける', ci: 0 }, { text: '保険の利回り' }].concat(activeAlts().map(function (x) { return { text: shortName(x.alt.name), ci: x.i + 1 }; }));
     s7.appendChild(shTable(head7, ages.map(function (a2) {
       var b2 = insNet(a2);
@@ -1942,7 +1984,7 @@ label.btn { display: inline-flex; align-items: center; }
     /* 8 コメント */
     if (pr.comment && pr.comment.trim()) {
       var s8 = shSec(++no, '補足コメント');
-      s8.appendChild(el('p', 'sh-comment', pr.comment.trim()));
+      pr.comment.trim().split(/\r?\n/).forEach(function (line) { s8.appendChild(el('p', 'sh-comment', line || '\u00a0')); });
       blocks.push(s8);
     }
 
@@ -1965,12 +2007,44 @@ label.btn { display: inline-flex; align-items: center; }
       return body;
     }
     var body = newSheet();
-    proposalBlocks().forEach(function (b) {
-      body.appendChild(b);
-      if (body.scrollHeight > body.clientHeight + 1 && body.children.length > 1) {
-        body.removeChild(b); body = newSheet(); body.appendChild(b);
+    function fits() { return body.scrollHeight <= body.clientHeight + 1; }
+    /* はみ出した段落の後ろの部分を「（つづき）」の段落に移す。移せたら新しい段落を返す */
+    function splitBlock(b) {
+      var h = b.querySelector('h2');
+      if (!h) return null;
+      var cont = el('section', b.className), h2 = h.cloneNode(true);
+      h2.appendChild(document.createTextNode('（つづき）'));
+      cont.appendChild(h2);
+      var moved = false;
+      function kids() { return Array.prototype.filter.call(b.children, function (c) { return c !== h; }); }
+      while (!fits() && kids().length > 1) { cont.insertBefore(kids()[kids().length - 1], h2.nextSibling); moved = true; }
+      if (!fits() && kids().length === 1) {
+        var only = kids()[0];
+        var list = only.tagName === 'UL' ? only : only.querySelector('ul');
+        var tbody = only.tagName === 'TABLE' ? only.querySelector('tbody') : only.querySelector('tbody');
+        if (list && list.children.length > 1) {
+          var ul2 = el('ul', list.className); cont.insertBefore(ul2, h2.nextSibling);
+          while (!fits() && list.children.length > 1) { ul2.insertBefore(list.lastElementChild, ul2.firstChild); moved = true; }
+        } else if (tbody && tbody.children.length > 1) {
+          var tbl = tbody.parentNode, t2 = el('table', tbl.className), tb2 = el('tbody');
+          var th = tbl.querySelector('thead'); if (th) t2.appendChild(th.cloneNode(true));
+          t2.appendChild(tb2); cont.insertBefore(t2, h2.nextSibling);
+          while (!fits() && tbody.children.length > 1) { tb2.insertBefore(tbody.lastElementChild, tb2.firstChild); moved = true; }
+        }
       }
-    });
+      return moved ? cont : null;
+    }
+    function place(b) {
+      body.appendChild(b);
+      if (fits()) return;
+      if (body.children.length > 1) {
+        body.removeChild(b); body = newSheet(); body.appendChild(b);
+        if (fits()) return;
+      }
+      var rest = splitBlock(b);
+      if (rest) { body = newSheet(); place(rest); }
+    }
+    proposalBlocks().forEach(place);
     var by = $('pr-by').value.trim();
     pages.forEach(function (sh, i) {
       var f = sh.lastChild;
@@ -2090,25 +2164,42 @@ label.btn { display: inline-flex; align-items: center; }
     var q = { id: newId(), name: str(p.name || '読み込んだ保険', 40), note: str(p.note, 200), builtin: false, edited: true };
     ['currentAge', 'currentYear', 'contractYear', 'surrenderNow', 'dividend', 'deduction', 'premiums', 'annualPremium', 'payEndAge', 'deathBenefit'].forEach(function (k) { q[k] = finite(p[k]); });
     ['surrenderNow', 'dividend', 'deduction', 'premiums', 'annualPremium'].forEach(function (k) { if (q[k] == null || q[k] < 0) q[k] = 0; });
-    if (q.currentAge == null) q.currentAge = 50;
-    if (q.currentYear == null) q.currentYear = 2026;
+    q.currentAge = q.currentAge != null && q.currentAge > 0 && q.currentAge < 120 ? Math.round(q.currentAge) : 50;
+    q.currentYear = q.currentYear != null && q.currentYear > 1900 && q.currentYear < 2200 ? Math.round(q.currentYear) : 2026;
+    if (!(q.contractYear > 1900 && q.contractYear < 2200)) q.contractYear = null;
+    if (!(q.payEndAge > 0 && q.payEndAge < 130)) q.payEndAge = null;
+    if (!(q.deathBenefit >= 0)) q.deathBenefit = null;
+    q.tableKey = ['age', 'elapsed', 'year'].indexOf(p.tableKey) >= 0 ? p.tableKey : 'year';
     q.table = (Array.isArray(p.table) ? p.table : [])
       .filter(function (r) { return Array.isArray(r) && finite(r[0]) != null && finite(r[1]) != null; })
       .map(function (r) { return [Math.round(+r[0]), +r[1]]; }).slice(0, 300);
     if (p.proposal && typeof p.proposal === 'object') q.proposal = { to: str(p.proposal.to, 40), comment: str(p.proposal.comment, 600), date: str(p.proposal.date, 20) };
     return normalizePolicy(q);
   }
+  function isNum(v, lo, hi) { return typeof v === 'number' && isFinite(v) && v >= lo && v <= hi; }
+  /* 読み込む設定は、画面で入れられる範囲のものだけ使う */
+  var SETTING_OK = {
+    horizonAge: function (v) { return isNum(v, 1, 129); },
+    mode: function (v) { return v === 'lump' || v === 'monthly'; },
+    months: function (v) { return isNum(v, 2, 240); },
+    waitRate: function (v) { return isNum(v, 0, 10); },
+    oneTimeTaxRate: function (v) { return isNum(v, 0, 55); },
+    chartView: function (v) { return v === 'surrender' || v === 'death'; },
+    showBand: function (v) { return typeof v === 'boolean'; },
+    proposalBy: function (v) { return typeof v === 'string'; }
+  };
+  function inRange(v, lo, hi, def) { var n = finite(v); return n != null && n >= lo && n <= hi ? n : def; }
   function cleanAlts(list) {
     var TAXES = ['interest', 'free', 'onsale', 'ichiji'];
     return DEFAULT_ALTS.map(function (d, i) {
       var a = list[i] && typeof list[i] === 'object' ? list[i] : {};
       var fx = a.fx && typeof a.fx === 'object' ? a.fx : {};
       var dfx = d.fx;
-      function num2(v, def) { var n = finite(v); return n == null ? def : n; }
       return {
-        name: str(a.name || d.name, 30), rate: num2(a.rate, d.rate), vol: Math.max(0, num2(a.vol, d.vol)),
+        name: str(a.name || d.name, 30), rate: inRange(a.rate, -9.99, 29.99, d.rate), vol: inRange(a.vol, 0, 60, d.vol),
         tax: TAXES.indexOf(a.tax) >= 0 ? a.tax : d.tax, on: a.on === undefined ? d.on : !!a.on,
-        fx: { on: fx.on === undefined ? dfx.on : !!fx.on, now: num2(fx.now, dfx.now), future: num2(fx.future, dfx.future), vol: Math.max(0, num2(fx.vol, dfx.vol)), fee: Math.max(0, num2(fx.fee, dfx.fee)), low: num2(fx.low, dfx.low), high: num2(fx.high, dfx.high) }
+        fx: { on: fx.on === undefined ? dfx.on : !!fx.on, now: inRange(fx.now, 1.01, 1999, dfx.now), future: inRange(fx.future, 1.01, 1999, dfx.future),
+          vol: inRange(fx.vol, 0, 60, dfx.vol), fee: inRange(fx.fee, 0, 19.99, dfx.fee), low: inRange(fx.low, 1.01, 1999, dfx.low), high: inRange(fx.high, 1.01, 1999, dfx.high) }
       };
     });
   }
@@ -2117,7 +2208,8 @@ label.btn { display: inline-flex; align-items: center; }
     if (!o || o.app !== FILE_TAG || !Array.isArray(o.policies)) throw new Error('format');
     var pols = o.policies.filter(function (p) { return p && typeof p === 'object'; }).map(cleanPolicy).slice(0, 100);
     if (!pols.length) throw new Error('empty');
-    return { policies: pols, alts: Array.isArray(o.alts) ? cleanAlts(o.alts) : null, settings: o.settings && typeof o.settings === 'object' ? o.settings : null };
+    var ui = o.ui && typeof o.ui === 'object' && ['age', 'elapsed', 'year'].indexOf(o.ui.key) >= 0 && ['man', 'yen'].indexOf(o.ui.unit) >= 0 ? { key: o.ui.key, unit: o.ui.unit } : null;
+    return { policies: pols, alts: Array.isArray(o.alts) ? cleanAlts(o.alts) : null, settings: o.settings && typeof o.settings === 'object' ? o.settings : null, ui: ui };
   }
   var pendingImport = null, replaceArmed = null;
   function renderImportChoice(fileName) {
@@ -2148,8 +2240,10 @@ label.btn { display: inline-flex; align-items: center; }
       }
       clearTimeout(replaceArmed); replaceArmed = null;
       S.policies = im.policies;
+      S.current = 0;
       if (im.alts) S.alts = im.alts;
-      if (im.settings) SETTING_KEYS.forEach(function (k) { if (im.settings[k] !== undefined && typeof im.settings[k] === typeof (DEFAULTS[k] !== undefined ? DEFAULTS[k] : '')) S[k] = im.settings[k]; });
+      if (im.settings) SETTING_KEYS.forEach(function (k) { var v = im.settings[k]; if (v !== undefined && SETTING_OK[k](v)) S[k] = k === 'proposalBy' ? str(v, 60) : v; });
+      if (im.ui) S.ui = im.ui;
       pendingImport = null; box.textContent = '';
       buildAlts(); fillGlobalFields(); renderProposalPanel();
       switchTo(0);

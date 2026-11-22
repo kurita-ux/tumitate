@@ -35,7 +35,9 @@ BOX = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 GRAY = "4B5356"
 
 FIRST_ROW = 16          # 表の1行目
-N_ROWS = 30             # 表の行数（空き行を含む）
+MIN_ROWS = 30           # 表の最低行数（空き行を含む）
+SPARE_ROWS = 10         # 年齢の数より多めにとる空き行
+N_ROWS = MIN_ROWS       # build() の中で、入れる年齢の数に合わせて決め直す
 LAST_ROW = FIRST_ROW + N_ROWS - 1
 DIFF_FMT = "+#,##0.0;-#,##0.0;0.0"
 
@@ -114,6 +116,16 @@ def block(ws, top_ref, title, items):
 
 
 def build(data, out_path):
+    global N_ROWS, LAST_ROW
+    a, b = data["a"], data["b"]
+    c = data.get("c") or {}
+    rows_a = {int(r[0]): r[1] for r in a["rows"]}
+    rows_b = {int(r[0]): r[1] for r in b.get("rows", [])}
+    rows_c = {int(r[0]): r[1] for r in c.get("rows", [])}
+    ages = sorted(set(rows_a) | set(rows_b) | set(rows_c))
+    N_ROWS = max(MIN_ROWS, len(ages) + SPARE_ROWS)
+    LAST_ROW = FIRST_ROW + N_ROWS - 1
+
     wb = Workbook()
     ws = wb.active
     ws.title = "比較"
@@ -128,9 +140,6 @@ def build(data, out_path):
     put(ws, "A2", "黄色のセルに数字を入れると、返戻率と年利回りが自動で計算されます。円の金額は万円、ドルはドル、為替は1ドルあたりの円。税金は含みません。",
         border=False, color=GRAY)
 
-    a, b = data["a"], data["b"]
-    c = data.get("c") or {}
-
     # ---- A：今の保険 ----
     block(ws, "A4", "■ A：今の保険（円）", [
         ("A5:C5", "名前", "D5", a["name"], None, True, False, "E5"),
@@ -140,7 +149,7 @@ def build(data, out_path):
         ("A9:C9", "配当金など", "D9", a["dividend"], "#,##0.00", True, False, None),
         ("A10:C10", "今解約した受取額", "D10", "=D8+D9", "#,##0.00", False, False, None),
         ("A11:C11", "払い込んだ保険料の合計", "D11", a["premiums"], "#,##0.00", True, False, None),
-        ("A12:C12", "今の返戻率", "D12", '=IF(D11>0,ROUNDDOWN(D10/D11,3),"")', "0.0%", False, False, None),
+        ("A12:C12", "今の返戻率（解約返戻金÷払込）", "D12", '=IF(D11>0,ROUNDDOWN(D8/D11,3),"")', "0.0%", False, False, None),
     ])
 
     # ---- B：円建て・一時払 ----
@@ -210,10 +219,6 @@ def build(data, out_path):
     ws.row_dimensions[15].height = 48
 
     # ---- 表の本体 ----
-    rows_a = {int(r[0]): r[1] for r in a["rows"]}
-    rows_b = {int(r[0]): r[1] for r in b.get("rows", [])}
-    rows_c = {int(r[0]): r[1] for r in c.get("rows", [])}
-    ages = sorted(set(rows_a) | set(rows_b) | set(rows_c))
     for i in range(N_ROWS):
         r = FIRST_ROW + i
         age = ages[i] if i < len(ages) else None
@@ -261,6 +266,7 @@ def build(data, out_path):
         "※ C：ドルの解約返戻金を「受け取る時の為替 − 両替手数料」で円に直し、払い込みは「今の為替 ＋ 両替手数料」で計算しています。",
         "※ 分かれ目の為替：受け取る時の為替がこれより円安ならCがAより多く、円高ならAが多くなります（同じ金額を入れた場合）。",
         "※ 差：B・Cに「Aを今解約した受取額」と同じ金額を入れた場合の受取額から、Aを続けた場合の受取額を引いた額です。",
+        "※ A は保険料を払い終わった保険が前提です。これから保険料を払う保険を入れると、A の年利回りが実際より高く出ます。",
         "※ 税金・手数料（両替以外）は含みません。将来の金額は各社の試算書（予想額）で、約束された額ではありません。",
     ]
     for i, t in enumerate(notes):
@@ -300,6 +306,7 @@ def build(data, out_path):
         ("", False),
         ("注意", True),
         ("・税金（一時所得など）は含みません。くわしい比較は「保険の乗り換え判定」アプリを使ってください。", False),
+        ("・Aは保険料を払い終わった保険を前提にしています（払込中の保険だと、Aの年利回りが高めに出ます）。", False),
         ("・B・Cは保険料を一度に払う形（一時払）を前提にしています。", False),
         ("・為替は1つの値で計算しています。実際の為替は毎日変わり、大きく動くこともあります。", False),
         ("・将来の解約返戻金は各社の試算（予想額）です。解約すると死亡保障もなくなる点に注意してください。", False),
