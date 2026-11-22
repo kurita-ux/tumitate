@@ -263,6 +263,20 @@ label.f.full { grid-column: 1 / -1; }
 .import summary { cursor: pointer; font-weight: 700; font-size: 0.9rem; color: var(--accent); }
 .import[open] summary { margin-bottom: 10px; }
 .import-body { display: grid; gap: 10px; }
+.import-body h4 { margin: 4px 0 0; font-size: 0.9rem; }
+.read-ways { display: grid; gap: 12px; }
+.way { display: grid; gap: 8px; align-content: start; border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
+.way h4 { margin: 0; }
+.qr-box { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.qr-box canvas { width: 200px; max-width: 100%; height: auto; border-radius: 6px; background: #ffffff; }
+.qr-side { display: grid; gap: 8px; flex: 1 1 180px; min-width: 0; }
+.qr-link { font-size: 0.75rem; overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; user-select: all; }
+.scan-mode { gap: 12px; }
+.scan-steps { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; color: var(--ink-2); }
+.btn-big { font-size: 1rem; padding: 12px 18px; }
+.scan-result { display: grid; gap: 6px; }
+.scan-result:empty { display: none; }
+body.is-scan .wrap > *:not(#scanMode) { display: none !important; }
 textarea {
   font: inherit; font-size: 0.85rem; color: var(--ink); background: var(--bg);
   border: 1px solid var(--axis); border-radius: 6px; padding: 8px; width: 100%; min-width: 0; resize: vertical;
@@ -357,6 +371,25 @@ label.btn { display: inline-flex; align-items: center; }
 </head><!--SKELETON-->
 <body><!--SKELETON-->
 <main class="wrap">
+  <section class="card scan-mode" id="scanMode" hidden aria-labelledby="scanTitle">
+    <p class="eyebrow">試算書の読み取り</p>
+    <h2 id="scanTitle">試算書を撮影して、パソコンに送ります</h2>
+    <ol class="scan-steps">
+      <li>試算書の「解約返戻金の推移」の表が、画面いっぱいにまっすぐ写るように撮ってください。</li>
+      <li>Claudeが表を読み取り、パソコンの画面に送ります（30秒〜1分ほど）。</li>
+      <li>パソコンの画面で数字を確認して、表に入れてください。</li>
+    </ol>
+    <div class="btn-row">
+      <input type="file" id="scanCamera" accept="image/*" capture="environment" class="vh">
+      <label class="btn btn-primary btn-big" for="scanCamera">カメラで撮影する</label>
+      <input type="file" id="scanPick" accept="image/jpeg,image/png,image/webp" class="vh">
+      <label class="btn" for="scanPick">写真から選ぶ</label>
+      <button type="button" class="btn" id="scanStop" hidden>読み取りをやめる</button>
+    </div>
+    <p class="msg" id="scanStatus" aria-live="polite"></p>
+    <div class="scan-result" id="scanResult"></div>
+    <div class="btn-row"><button type="button" class="btn" id="scanExit">このスマホでアプリを使う</button></div>
+  </section>
   <header class="head">
     <p class="eyebrow">解約返戻金 と 乗り換え先 の利回り比較</p>
     <h1>保険の乗り換え判定</h1>
@@ -500,8 +533,39 @@ label.btn { display: inline-flex; align-items: center; }
           </div>
         </div>
         <details class="import" id="importBox">
-          <summary>試算書の表をまとめて貼り付ける</summary>
+          <summary>試算書の表を読み取る（スマホで撮影・画像・貼り付け）</summary>
           <div class="import-body">
+            <div class="read-ways" id="readWays">
+              <div class="way" id="wayQr">
+                <h4>スマホで撮影して読み取る</h4>
+                <p class="hint">QRコードをスマホのカメラで読み取り、開いたページで試算書を撮影します。Claudeが表を読み取って、この画面に届けます。</p>
+                <div class="btn-row"><button type="button" class="btn btn-primary" id="qrStart">QRコードを出す</button></div>
+                <div class="qr-box" id="qrBox" hidden>
+                  <canvas id="qrCanvas" width="200" height="200" role="img" aria-label="スマホで読み取るQRコード"></canvas>
+                  <div class="qr-side">
+                    <p class="hint">スマホは、このパソコンと同じClaudeのアカウントでログインしておいてください。QRコードが読めないときは、このリンクをスマホに送って開いてください。</p>
+                    <code class="qr-link" id="qrLink"></code>
+                    <div class="btn-row">
+                      <button type="button" class="btn" id="qrCopy">リンクをコピー</button>
+                      <button type="button" class="btn" id="qrStop">やめる</button>
+                    </div>
+                  </div>
+                </div>
+                <p class="msg" id="qrStatus" aria-live="polite"></p>
+              </div>
+              <div class="way" id="wayPhoto">
+                <h4>写真・画像から読み取る</h4>
+                <p class="hint">試算書の写真や、PDFの画面を撮った画像（スクリーンショット）を選ぶと、Claudeが表を読み取ります。</p>
+                <div class="btn-row">
+                  <input type="file" id="photoFile" accept="image/jpeg,image/png,image/webp" class="vh">
+                  <label class="btn" for="photoFile">画像を選ぶ</label>
+                  <button type="button" class="btn" id="readStop" hidden>読み取りをやめる</button>
+                </div>
+                <p class="msg" id="readStatus" aria-live="polite"></p>
+              </div>
+            </div>
+            <p class="hint" id="readUnavailable" hidden>スマホでの撮影と画像からの読み取りは、claude.ai で開いたページで使えます。</p>
+            <h4>表をコピーして貼り付ける</h4>
             <p class="hint">PDFやExcelの表をコピーして貼り付け、「読み取る」を押してください。1行に「年齢・西暦・経過年数のどれか」と「解約返戻金」があれば読み取れます。</p>
             <label class="f" for="pasteText">貼り付ける場所
               <textarea id="pasteText" rows="6" placeholder="例：&#10;10年 (2036年) 55歳 360.00万円 324.72万円 90.2%&#10;11年 (2037年) 56歳 378.00万円 342.58万円 90.6%"></textarea>
@@ -577,6 +641,7 @@ label.btn { display: inline-flex; align-items: center; }
   <section class="notes card" aria-labelledby="notesTitle">
     <h2 id="notesTitle">前提と注意</h2>
     <ul id="notesList">
+      <li data-skip="1">写真・画像から読み取る機能は、撮った写真をあなたのClaudeのアカウントでClaudeに送り、表の数字を読み取ってもらいます。読み間違いがあるので、表に入れる前に必ず試算書と見比べてください。スマホとパソコンの受け渡しには、このページのあなた専用の保存場所を使い、受け取ったら消します。</li>
       <li data-skip="1">入力した数字は、使っているブラウザの中だけに保存されます。ほかの人やサーバーには送られません。「ファイルに保存」したファイルには入力した数字がすべて入るので、渡す相手に気をつけてください。</li>
       <li>保険の将来の金額は、入力した「今後の解約返戻金」の表（試算書の予想額）です。表にない年齢は、前後の年から計算した概算です。</li>
       <li data-topic="paying">保険料を払っている途中の保険は、続けた場合に払う保険料と同じ額を、乗り換えた場合も毎月積み立てる前提で比べています。</li>
@@ -613,6 +678,8 @@ label.btn { display: inline-flex; align-items: center; }
 
   /* POLICY_DATA_START */
   var DATA_VERSION = 1;
+  /* スマホで開くこのページのURL（QRコードに入れる） */
+  var APP_URL = 'https://claude.ai/artifact/8DheZ4ZrWQkjjQ9sjDAywg';
   var DEFAULT_POLICIES = [{
     id: 'sample1',
     name: 'サンプルの終身保険',
@@ -1604,6 +1671,7 @@ label.btn { display: inline-flex; align-items: center; }
     if (!parsed) return;
     if (parsed.error) { var e = el('p', 'msg err', parsed.error); e.id = 'importMsg'; box.appendChild(e); return; }
     box.appendChild(el('p', 'hint', parsed.rows.length + '行を読み取りました。各列が何を表すか確認して、違っていれば選び直してください。'));
+    if (parsed.source === 'photo') box.appendChild(el('p', 'msg err', '写真から読み取った内容です。読み間違いがないか、試算書と見比べてから入れてください。'));
     var wrap = el('div', 'table-wrap'), t = el('table'), thead = el('thead'), tr = el('tr');
     parsed.roles.forEach(function (role, c) {
       var th = el('th'), sel = document.createElement('select');
@@ -1621,6 +1689,21 @@ label.btn { display: inline-flex; align-items: center; }
     });
     if (parsed.rows.length > 5) { var more = el('tr'); var td = el('td', null, '…ほか' + (parsed.rows.length - 5) + '行'); td.colSpan = parsed.roles.length; more.appendChild(td); tb.appendChild(more); }
     t.appendChild(tb); wrap.appendChild(t); box.appendChild(wrap);
+    var cur = parsed.current, items = [];
+    if (cur) {
+      if (cur.company) items.push('名前「' + cur.company + '」（今の名前が初期のときだけ）');
+      if (cur.currentAge != null) items.push('今の年齢 ' + cur.currentAge + '歳');
+      if (cur.contractYear != null) items.push('契約した年 ' + cur.contractYear + '年');
+      if (cur.surrender != null) items.push('今の解約返戻金 ' + f1(cur.surrender) + '万円');
+      if (cur.dividend != null) items.push('配当金など ' + f1(cur.dividend) + '万円');
+      if (cur.premiums != null) items.push('払い込んだ保険料の合計 ' + f1(cur.premiums) + '万円');
+    }
+    if (items.length) {
+      var lab = el('label', 'check'); lab.htmlFor = 'imp-current';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = 'imp-current'; cb.checked = true;
+      lab.appendChild(cb); lab.appendChild(document.createTextNode('試算書から読み取った次の数字も入れる：' + items.join('、')));
+      box.appendChild(lab);
+    }
     var msg = el('p', 'msg'); msg.id = 'importMsg'; box.appendChild(msg);
     var b = el('button', 'btn', 'この内容で表を置き換える'); b.type = 'button'; b.id = 'applyImport';
     b.addEventListener('click', applyImport);
@@ -1637,19 +1720,30 @@ label.btn { display: inline-flex; align-items: center; }
     if (ki < 0) { showMsg('「年齢」「西暦」「経過年数」のどれかの列を選んでください。', false); return; }
     if (vi < 0) { showMsg('「解約返戻金」の列を選んでください。', false); return; }
     var kr = roles[ki], vr = roles[vi];
-    if (kr === 'elapsed' && !p.contractYear) { showMsg('経過年数で読み取るには、上の「契約した年」を先に入れてください。', false); return; }
+    var cur = parsed.current && $('imp-current') && $('imp-current').checked ? parsed.current : null;
+    var curAge = cur && cur.currentAge != null ? cur.currentAge : p.currentAge;
+    var conYear = cur && cur.contractYear != null ? cur.contractYear : p.contractYear;
+    if (kr === 'elapsed' && !conYear) { showMsg('経過年数で読み取るには、上の「契約した年」を先に入れてください。', false); return; }
     var byYear = {};
     parsed.rows.forEach(function (r) {
       var k = r[ki].v, v = r[vi].v;
-      var y = kr === 'year' ? k : kr === 'elapsed' ? p.contractYear + k : p.currentYear + (k - p.currentAge);
+      var y = kr === 'year' ? k : kr === 'elapsed' ? conYear + k : p.currentYear + (k - curAge);
       var man = vr === 'yen' ? v / 10000 : v;
       if (isFinite(y) && isFinite(man) && man > 0) byYear[Math.round(y)] = man;
     });
     var table = Object.keys(byYear).map(function (y) { return [+y, byYear[y]]; }).sort(function (a, b) { return a[0] - b[0]; });
     if (!table.length) { showMsg('表に入れられる行がありませんでした。列の選び方を確認してください。', false); return; }
+    if (cur) {
+      p.currentAge = curAge;
+      if (conYear) p.contractYear = conYear;
+      if (cur.surrender != null) p.surrenderNow = cur.surrender;
+      if (cur.dividend != null) p.dividend = cur.dividend;
+      if (cur.premiums != null) p.premiums = cur.premiums;
+      if (cur.company && (p.name === '新しい保険' || p.name === '名前なしの保険')) p.name = cur.company;
+    }
     p.table = table; p.tableKey = kr; p.edited = true;
     S.ui.key = kr; S.ui.unit = vr === 'yen' ? 'yen' : 'man';
-    fillPolicyFields(); buildRows(); update();
+    fillPolicyFields(); buildRows(); renderPolicyBar(); update();
     var future = table.filter(function (r) { return r[0] > p.currentYear; }).length;
     showMsg(table.length + '行を表に入れました（今より後の年は' + future + '行）。', true);
   }
@@ -2136,6 +2230,276 @@ label.btn { display: inline-flex; align-items: center; }
     $('prPrint').hidden = inArtifact();
     $('prPrint').addEventListener('click', function () { $('prPreview').open = true; renderProposal(); window.print(); });
   }
+  /* ---------- 写真から読み取る（Claude） ---------- */
+  var QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js';
+  var OCR_PROMPT = [
+    'これは日本の生命保険の「解約返戻金の試算書（設計書・解約時のお支払額のお知らせなど）」の写真です。',
+    '表（「今後の解約返戻金の推移」など）から、年齢・西暦・経過年数ごとの解約返戻金を読み取ってください。',
+    '次の形のJSONだけを返してください（説明の文は不要）：',
+    '{"rows":[{"age":55,"year":2027,"elapsed":11,"surrender":215.10}],"unit":"万円","current":{"surrender":2136200,"dividend":42230,"premiums":null,"unit":"円"},"contractYear":2016,"company":"〇〇生命"}',
+    '決まり：',
+    '- rows：表の各行。age（年齢）・year（西暦）・elapsed（契約からの経過年数）は、書かれているものだけ数字で。書かれていなければ null。',
+    '- surrender：その行の「解約返戻金」の数字。保険料累計・返戻率・死亡保険金の列とまちがえないこと。',
+    '- unit：rows の surrender の単位。表の見出しや数字に合わせて「万円」か「円」。',
+    '- current：「今解約した場合」「解約時のお支払額」などの欄があれば、その解約返戻金・配当金等・払い込んだ保険料の合計と、その単位。なければ null。',
+    '- contractYear：契約日の西暦（わかれば）。company：保険会社名（わかれば）。わからなければ null。',
+    '- 読めない数字は推測せず null にする。数字はカンマを取り除いた半角の数値にする。'
+  ].join('\n');
+  var OCR_TILES = '\n画像は3枚あります。1枚目はページ全体、2枚目と3枚目は同じページの上側と下側を大きくしたものです。同じ行を二重に数えないでください。';
+  var readCtl = null;
+  function capUse(name) { return inArtifact() ? window.claude.use(name).catch(function () { return null; }) : Promise.resolve(null); }
+  function posNum(v) { var n = typeof v === 'string' ? parseFloat(v.replace(/[,，\s]/g, '')) : v; return typeof n === 'number' && isFinite(n) && n > 0 ? n : null; }
+  function intIn(v, lo, hi) { var n = posNum(v); if (v === 0) n = 0; return n != null && n >= lo && n <= hi ? Math.round(n) : null; }
+  function loadImg(file) {
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () { res({ img: img, url: url }); };
+      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('image')); };
+      img.src = url;
+    });
+  }
+  function cropBlob(img, y0, y1) {
+    return new Promise(function (res) {
+      var w = img.naturalWidth, h = img.naturalHeight, sy = Math.round(h * y0), sh = Math.round(h * (y1 - y0));
+      var k = Math.min(1, 2400 / Math.max(w, sh)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(sh * k));
+      c.getContext('2d').drawImage(img, 0, sy, w, sh, 0, 0, c.width, c.height);
+      c.toBlob(function (b) { res(b); }, 'image/jpeg', 0.9);
+    });
+  }
+  /* 小さな文字も読めるように、ページ全体に加えて上下半分ずつを大きくした画像も送る */
+  async function prepareImages(file, maxCount) {
+    if (!(maxCount >= 3)) return [file];
+    try {
+      var li = await loadImg(file);
+      var top = await cropBlob(li.img, 0, 0.55), bottom = await cropBlob(li.img, 0.45, 1);
+      URL.revokeObjectURL(li.url);
+      return top && bottom ? [file, top, bottom] : [file];
+    } catch (e) { return [file]; }
+  }
+  function ocrError(code) {
+    return {
+      not_granted: 'Claudeを使う許可がないため、読み取れませんでした。',
+      sampling_disabled: 'このアカウントではClaudeを使えないため、読み取れませんでした。',
+      images_unavailable: 'この画面では画像をClaudeに送れません。',
+      image_rejected: 'この画像は読み込めませんでした。JPEGかPNGの写真で、もう一度試してください。',
+      rate_limited: 'Claudeの利用が混み合っているか、上限に達しています。少し待ってから、もう一度試してください。',
+      session_expired: 'claude.ai にもう一度ログインしてから試してください。',
+      invalid_json: 'うまく読み取れませんでした。明るい場所で、表全体がまっすぐ写るように撮り直してください。',
+      no_rows: '表の行が見つかりませんでした。解約返戻金の表が写っているか確かめて、撮り直してください。',
+      refused: 'この画像は読み取れませんでした。別の写真で試してください。',
+      cancelled: '読み取りをやめました。',
+      unavailable: 'この画面では、写真からの読み取りが使えません。'
+    }[code] || '通信がうまくいきませんでした。もう一度試してください。';
+  }
+  /* Claudeの答え（またはスマホから届いた内容）を、確かめてから使える形にする。金額は万円にそろえる */
+  function cleanOcr(o) {
+    if (!o || typeof o !== 'object') throw { code: 'invalid_json' };
+    var yen = o.unit === '円';
+    var rows = (Array.isArray(o.rows) ? o.rows : []).slice(0, 200).map(function (r) {
+      r = r && typeof r === 'object' ? r : {};
+      var v = posNum(r.surrender);
+      return { age: intIn(r.age, 0, 130), year: intIn(r.year, 1900, 2200), elapsed: intIn(r.elapsed, 0, 130), v: v == null ? null : (yen ? v / 10000 : v) };
+    }).filter(function (r) { return r.v != null && (r.age != null || r.year != null || r.elapsed != null); });
+    if (!rows.length) throw { code: 'no_rows' };
+    var c = o.current && typeof o.current === 'object' ? o.current : null;
+    var cy = c ? (c.unit === '円' ? true : c.unit === '万円' ? false : yen) : false;
+    function man(v) { var n = posNum(v); return n == null ? null : (cy ? n / 10000 : n); }
+    return {
+      rows: rows,
+      current: c ? { surrender: man(c.surrender), dividend: man(c.dividend), premiums: man(c.premiums) } : null,
+      contractYear: intIn(o.contractYear, 1900, 2200),
+      company: typeof o.company === 'string' && o.company.trim() ? o.company.trim().slice(0, 40) : null
+    };
+  }
+  /* スマホからパソコンへ送る形（cleanOcr でもう一度読める形） */
+  function toWire(res) {
+    return {
+      unit: '万円',
+      rows: res.rows.map(function (r) { return { age: r.age, year: r.year, elapsed: r.elapsed, surrender: r.v }; }),
+      current: res.current ? { surrender: res.current.surrender, dividend: res.current.dividend, premiums: res.current.premiums, unit: '万円' } : null,
+      contractYear: res.contractYear, company: res.company
+    };
+  }
+  /* 読み取り結果を、貼り付けと同じプレビューの形にする */
+  function ocrToParsed(res) {
+    var keys = ['year', 'age', 'elapsed'];
+    var cols = keys.filter(function (k) { return res.rows.every(function (r) { return r[k] != null; }); });
+    var rows = res.rows;
+    if (!cols.length) {
+      var best = keys.slice().sort(function (a, b) {
+        return rows.filter(function (r) { return r[b] != null; }).length - rows.filter(function (r) { return r[a] != null; }).length;
+      })[0];
+      cols = [best];
+      rows = rows.filter(function (r) { return r[best] != null; });
+    }
+    var cur = res.current ? { surrender: res.current.surrender, dividend: res.current.dividend, premiums: res.current.premiums } : {};
+    cur.contractYear = res.contractYear;
+    cur.company = res.company;
+    var both = rows.filter(function (r) { return r.year != null && r.age != null; })[0];
+    cur.currentAge = both ? both.age - (both.year - P().currentYear) : null;
+    if (!(cur.currentAge > 0 && cur.currentAge < 120)) cur.currentAge = null;
+    return {
+      source: 'photo',
+      rows: rows.map(function (r) {
+        return cols.map(function (k) { return { v: r[k], u: k === 'age' ? '歳' : '年' }; }).concat([{ v: Math.round(r.v * 10000) / 10000, u: '万円' }]);
+      }),
+      roles: cols.map(function (k, i) { return i === 0 ? k : 'skip'; }).concat(['man']),
+      current: cur
+    };
+  }
+  async function readWithClaude(file, onStatus) {
+    var sample = await capUse('sample');
+    if (!sample) throw { code: 'unavailable' };
+    var lim = await sample.limits().catch(function () { return null; });
+    if (!lim || !lim.images) throw { code: 'images_unavailable' };
+    onStatus('写真を準備しています…');
+    var imgs = await prepareImages(file, lim.images.maxCount);
+    readCtl = new AbortController();
+    onStatus('Claudeが試算書を読み取っています…（30秒〜1分ほどかかります）');
+    var raw = await sample.json(OCR_PROMPT + (imgs.length > 1 ? OCR_TILES : ''), { images: imgs, signal: readCtl.signal, cache: false });
+    return cleanOcr(raw);
+  }
+  function setRead(t, ok) { var m = $('readStatus'); m.textContent = t; m.className = 'msg' + (ok === true ? ' ok' : ok === false ? ' err' : ''); }
+  async function readPhotoHere(file) {
+    $('readStop').hidden = false;
+    try {
+      var res = await readWithClaude(file, setRead);
+      parsed = ocrToParsed(res); renderPreview();
+      setRead(res.rows.length + '行を読み取りました。下の内容を確認して「この内容で表を置き換える」を押してください。', true);
+    } catch (e) {
+      setRead(ocrError(e && e.code), false);
+    } finally {
+      $('readStop').hidden = true; readCtl = null;
+    }
+  }
+
+  /* --- パソコン側：QRコードを出して、スマホからの結果を待つ --- */
+  var qr = { ref: null, unsub: null };
+  function setQr(t, ok) { var m = $('qrStatus'); m.textContent = t; m.className = 'msg' + (ok === true ? ' ok' : ok === false ? ' err' : ''); }
+  function stopQr(hideBox) {
+    if (qr.unsub) { try { qr.unsub(); } catch (e) { /* 止まっていれば何もしない */ } }
+    qr = { ref: null, unsub: null };
+    if (hideBox) $('qrBox').hidden = true;
+  }
+  function randomToken() {
+    var a = new Uint8Array(10), t = '';
+    (window.crypto || window.msCrypto).getRandomValues(a);
+    for (var i = 0; i < a.length; i++) t += 'abcdefghijkmnpqrstuvwxyz23456789'.charAt(a[i] % 32);
+    return t;
+  }
+  async function startQr() {
+    setQr('');
+    var db = await capUse('db'), user = await capUse('user');
+    if (!APP_URL || !db || !user) { setQr('このページでは、スマホとの受け渡しが使えません。「写真・画像から読み取る」を使ってください。', false); return; }
+    var can = await user.can('data.write').catch(function () { return null; });
+    if (can === false) { setQr('このページの共有の設定（閲覧のみ）では、スマホとの受け渡しが使えません。「写真・画像から読み取る」を使ってください。', false); return; }
+    var uid = await user.id().catch(function () { return null; });
+    if (!uid) { setQr('claude.ai にログインすると使えます。', false); return; }
+    stopQr(false);
+    var url = APP_URL + '#scan-' + randomToken();
+    try { await loadScript(QR_LIB); } catch (e) { setQr('QRコードを作れませんでした。通信の状態を確かめて、もう一度押してください。', false); return; }
+    new window.QRious({ element: $('qrCanvas'), value: url, size: 200, padding: 14, level: 'M', background: '#ffffff', foreground: '#14181a' });
+    $('qrLink').textContent = url;
+    $('qrBox').hidden = false;
+    setQr('スマホからの読み取りを待っています…');
+    var ref = db.doc('data/users/' + uid + '/scan-' + url.split('#scan-')[1]);
+    qr.ref = ref;
+    qr.unsub = ref.onSnapshot(function (snap) {
+      if (!snap.exists) return;
+      var d = snap.data() || {};
+      if (d.status === 'reading') { setQr('スマホで写真を読み取っています…'); return; }
+      if (d.status === 'error') { setQr('スマホでの読み取りがうまくいきませんでした：' + str(d.message, 120) + '　スマホで撮り直せます。', false); return; }
+      if (d.status === 'done') {
+        try {
+          parsed = ocrToParsed(cleanOcr(d.result)); renderPreview();
+          setQr('スマホから表が届きました。下の内容を確認して「この内容で表を置き換える」を押してください。', true);
+        } catch (e) {
+          setQr('届いた内容を読めませんでした。スマホで撮り直してください。', false);
+          return;
+        }
+        stopQr(true);
+        ref.delete().catch(function () { /* 消せなくても困らない */ });
+      }
+    }, function () { setQr('受け渡しが止まりました。もう一度「QRコードを出す」を押してください。', false); });
+  }
+
+  /* --- スマホ側：QRコードから開いたとき --- */
+  function setScan(t, ok) { var m = $('scanStatus'); m.textContent = t; m.className = 'msg' + (ok === true ? ' ok' : ok === false ? ' err' : ''); }
+  async function initScanMode() {
+    var m = /^#scan-([a-z0-9]{6,24})$/.exec(location.hash || '');
+    if (!m) return;
+    document.body.classList.add('is-scan');
+    $('scanMode').hidden = false;
+    var token = m[1], ref = null, busy = false;
+    var db = await capUse('db'), user = await capUse('user');
+    var uid = user ? await user.id().catch(function () { return null; }) : null;
+    if (db && uid) ref = db.doc('data/users/' + uid + '/scan-' + token);
+    else setScan('このページでは、パソコンへ送れません。読み取った結果は、このスマホのアプリに入れられます。');
+    async function onFile(file) {
+      if (!file || busy) return;
+      busy = true; $('scanStop').hidden = false; $('scanResult').textContent = '';
+      if (ref) await ref.set({ status: 'reading', at: Date.now() }).catch(function () { ref = null; });
+      try {
+        var res = await readWithClaude(file, setScan);
+        var ages = res.rows.map(function (r) { return r.age; }).filter(function (a) { return a != null; });
+        var sum = el('p', 'hint', res.rows.length + '行を読み取りました' + (ages.length ? '（' + Math.min.apply(null, ages) + '歳〜' + Math.max.apply(null, ages) + '歳）' : '') + '。');
+        $('scanResult').appendChild(sum);
+        if (ref) {
+          await ref.set({ status: 'done', at: Date.now(), result: toWire(res) });
+          setScan('パソコンに送りました。パソコンの画面で内容を確かめて、表に入れてください。', true);
+        } else {
+          parsed = ocrToParsed(res);
+          setScan('読み取りました。「このスマホでアプリを使う」を押すと、保険のデータの欄で確認して入れられます。', true);
+        }
+      } catch (e) {
+        var msg = ocrError(e && e.code);
+        setScan(msg, false);
+        if (ref) ref.set({ status: 'error', at: Date.now(), message: msg }).catch(function () { /* 送れなくても画面には出ている */ });
+      } finally {
+        busy = false; $('scanStop').hidden = true; readCtl = null;
+      }
+    }
+    ['scanCamera', 'scanPick'].forEach(function (id) {
+      $(id).addEventListener('change', function () { var f = this.files && this.files[0]; this.value = ''; onFile(f); });
+    });
+    $('scanStop').addEventListener('click', function () { if (readCtl) readCtl.abort(); });
+    $('scanExit').addEventListener('click', function () {
+      document.body.classList.remove('is-scan'); $('scanMode').hidden = true;
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+      if (parsed) { $('importBox').open = true; renderPreview(); $('policyCard').scrollIntoView({ block: 'start' }); }
+      renderChart();
+    });
+  }
+  async function initRead() {
+    var sample = await capUse('sample');
+    var lim = sample ? await sample.limits().catch(function () { return null; }) : null;
+    var ok = !!(lim && lim.images);
+    $('readWays').hidden = !ok;
+    $('readUnavailable').hidden = ok;
+  }
+  function bindRead() {
+    $('qrStart').addEventListener('click', startQr);
+    $('qrStop').addEventListener('click', function () {
+      var ref = qr.ref; stopQr(true); setQr('');
+      if (ref) ref.delete().catch(function () { /* 消せなくても困らない */ });
+    });
+    $('qrCopy').addEventListener('click', function () {
+      var t = $('qrLink').textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).then(function () { setQr('リンクをコピーしました。スマホに送って開いてください。', true); }, function () { selectText($('qrLink')); });
+      } else selectText($('qrLink'));
+    });
+    $('photoFile').addEventListener('change', function () { var f = this.files && this.files[0]; this.value = ''; if (f) readPhotoHere(f); });
+    $('readStop').addEventListener('click', function () { if (readCtl) readCtl.abort(); });
+    $('readWays').hidden = true;
+    initRead();
+    initScanMode();
+  }
+  function selectText(node) {
+    try { var r = document.createRange(); r.selectNodeContents(node); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); setQr('リンクを選びました。コピーしてスマホに送ってください。'); } catch (e) { /* 選べなくても表示はされている */ }
+  }
+
   /* ---------- データの保存と読み込み ---------- */
   var FILE_TAG = 'hoken-norikae';
   var SETTING_KEYS = ['horizonAge', 'mode', 'months', 'waitRate', 'oneTimeTaxRate', 'chartView', 'showBand', 'proposalBy'];
@@ -2313,6 +2677,7 @@ label.btn { display: inline-flex; align-items: center; }
   bindStatic();
   bindProposal();
   bindIo();
+  bindRead();
   renderProposalPanel();
   buildAlts();
   renderPolicyBar();

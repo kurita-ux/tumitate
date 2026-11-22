@@ -23,7 +23,10 @@
   `<!--SKELETON-->` の行を取り除いて公開する。本人データはリポジトリに置かない
 - 「保険の乗り換え判定」共有用：`app/index.html` から `<!--SKELETON-->` の行を取り除いてそのまま公開
 - 更新するときは、Artifact の一覧から URL を探し、読み込んでから同じ URL に公開する
-- どちらも公開時に `capabilities: {downloads: true}` を付ける（比較レポートのPDFと、データファイルの保存に使う）
+- どちらも公開時に `capabilities: {downloads: true, db: {}, user: {}, sample: {images: true}}` を付ける
+  - downloads：比較レポートのPDFとデータファイルの保存 / sample（画像あり）：写真からClaudeで表を読み取る
+  - db・user：スマホ→パソコンの受け渡し（本人専用の保存場所 `data/users/<id>/scan-<合言葉>`、受け取ったら消す）
+- QRコードに入れるURLは POLICY_DATA ブロックの `APP_URL`。共有用は共有ページのURL、自分用は自分用ページのURLに差し替える
 
 ## ルール
 - ユーザー本人の保険の数字は、このリポジトリにコミットしない
